@@ -1,0 +1,34 @@
+nas_report_dir: /mnt/nas/market-digest
+
+hankyung:
+  enabled: true
+  categories: []  # 비어 있으면 전체. 예: [company, industry, market]
+  request_interval_sec: 4
+  user_agent: "market-digest/0.1 (+personal-use)"
+  max_reports: 40  # 하루 상한 (PDF 다운로드 부하 방지)
+
+sec_edgar:
+  enabled: true
+  form_types: ["8-K"]
+  max_items: 30
+
+yfinance:
+  enabled: true
+  watchlist:
+    - AAPL
+    - MSFT
+    - NVDA
+    - GOOGL
+    - AMZN
+    - META
+    - TSLA
+    - AVGO
+    - AMD
+    - TSM
+
+claude:
+  cli_path: /home/sund4y/.local/bin/claude
+  allowed_tools: "Read,Write,Glob"
+  permission_mode: dontAsk
+  timeout_sec: 900          # subprocess timeout (15 min)
+  max_budget_usd: null      # e.g. 1.0 to cap per-run cost
