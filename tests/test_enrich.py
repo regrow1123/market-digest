@@ -38,6 +38,23 @@ def test_cache_set_and_persist(tmp_path):
     assert data["AAPL"]["source"] == "fmp+sonnet"
 
 
+def test_cache_save_noop_when_clean(tmp_path):
+    path = tmp_path / "blurbs.json"
+    cache = BlurbCache(path, ttl_days=90, today=date(2026, 4, 20))
+    cache.save()
+    assert not path.exists()
+
+
+def test_cache_save_writes_only_once_per_mutation(tmp_path):
+    path = tmp_path / "blurbs.json"
+    cache = BlurbCache(path, ttl_days=90, today=date(2026, 4, 20))
+    cache.set("AAPL", "x", source="t")
+    cache.save()
+    mtime1 = path.stat().st_mtime_ns
+    cache.save()  # no new mutation — should be a no-op
+    assert path.stat().st_mtime_ns == mtime1
+
+
 def test_cache_tolerates_corrupt_file(tmp_path):
     path = tmp_path / "blurbs.json"
     path.write_text("{{{ not json")

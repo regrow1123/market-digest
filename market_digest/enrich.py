@@ -27,6 +27,7 @@ class BlurbCache:
         self.ttl_days = ttl_days
         self._today = today or _date.today()
         self._data: dict[str, dict] = {}
+        self._dirty: bool = False
         if path.exists():
             try:
                 raw = json.loads(path.read_text(encoding="utf-8"))
@@ -53,13 +54,17 @@ class BlurbCache:
             "fetched_at": self._today.isoformat(),
             "source": source,
         }
+        self._dirty = True
 
     def save(self) -> None:
+        if not self._dirty:
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(
             json.dumps(self._data, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        self._dirty = False
 
 
 _PROFILE_URL = "https://financialmodelingprep.com/api/v3/profile/{ticker}"
