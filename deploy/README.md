@@ -37,3 +37,12 @@ uv run python -c "from pathlib import Path; from market_digest.web import build;
 
 The existing cron / scheduler that invokes `python -m market_digest.run`
 now also rebuilds the site as its last step.
+
+## 5. FMP API key
+
+1. Register free account at https://site.financialmodelingprep.com/developer/docs
+2. Copy API key into `.env`:
+   ```
+   FMP_API_KEY=your_key_here
+   ```
+3. Free tier: 250 calls/day. Daily run uses ~10-30 calls (feed + profiles).
