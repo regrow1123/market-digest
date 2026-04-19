@@ -153,23 +153,23 @@ def run(date: str, dry_run: bool) -> int:
     )
     log.info("summarize: json=%s usage=%s session=%s", result.json_path, result.usage, result.session_id)
 
-    if not _validate_digest(result.json_path, logs_dir, date, log):
-        # Keep going — the build step will skip this one date.
-        pass
-
-    try:
-        from market_digest.enrich import enrich_digest
-        enrich_digest(
-            json_path=result.json_path,
-            cache_path=nas_dir / "blurbs.json",
-            api_key=os.environ.get("FMP_API_KEY", ""),
-            claude_cli=cfg["claude"]["cli_path"],
-            model=cfg["claude"]["blurb_model"],
-            ttl_days=cfg["claude"]["blurb_cache_ttl_days"],
-        )
-        log.info("enrich: blurbs refreshed")
-    except Exception as exc:
-        log.exception("enrich failed (continuing): %s", exc)
+    digest_ok = _validate_digest(result.json_path, logs_dir, date, log)
+    if digest_ok:
+        try:
+            from market_digest.enrich import enrich_digest
+            enrich_digest(
+                json_path=result.json_path,
+                cache_path=nas_dir / "blurbs.json",
+                api_key=os.environ.get("FMP_API_KEY", ""),
+                claude_cli=cfg["claude"]["cli_path"],
+                model=cfg["claude"]["blurb_model"],
+                ttl_days=cfg["claude"]["blurb_cache_ttl_days"],
+            )
+            log.info("enrich: blurbs refreshed")
+        except Exception as exc:
+            log.exception("enrich failed (continuing): %s", exc)
+    else:
+        log.warning("digest invalid — skipping enrich; build will rebuild from prior JSONs")
 
     try:
         site = web_build(nas_dir)
