@@ -19,7 +19,7 @@ def collect_digests(nas_dir: Path) -> list[Digest]:
     are logged and skipped — the rest of the site still builds.
     """
     digests: list[Digest] = []
-    for path in sorted(nas_dir.glob("*/*/*.json")):
+    for path in sorted(nas_dir.glob("[0-9][0-9][0-9][0-9]/[0-9][0-9]/*.json")):
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
             digests.append(Digest.model_validate(raw))
