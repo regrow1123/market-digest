@@ -67,3 +67,34 @@ def test_empty_day_message():
     html = render_card_page(d, prev_date="2026-04-19", next_date=None)
     soup = BeautifulSoup(html, "html.parser")
     assert "오늘 수집된 리포트 없음" in soup.text
+
+
+def test_card_meta_omits_none_fields():
+    d = Digest.model_validate(
+        {
+            "date": "2026-04-19",
+            "groups": [
+                {
+                    "region": "kr",
+                    "category": "company",
+                    "title": "국내 기업리포트",
+                    "items": [
+                        {
+                            "id": "kr-company-0",
+                            "headline": "only opinion",
+                            "body_md": "-",
+                            "opinion": "Buy",
+                        },
+                        {
+                            "id": "kr-company-1",
+                            "headline": "only target",
+                            "body_md": "-",
+                            "target": "95k",
+                        },
+                    ],
+                }
+            ],
+        }
+    )
+    html = render_card_page(d, prev_date=None, next_date=None)
+    assert "None" not in html

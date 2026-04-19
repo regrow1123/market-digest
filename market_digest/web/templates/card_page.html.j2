@@ -22,7 +22,7 @@
           {% if item.name %}<span class="name">{{ item.name }}</span>{% if item.ticker %} ({{ item.ticker }}){% endif %}{% endif %}
           <span class="dash">—</span>
           <span class="headline">{{ item.headline }}</span>
-          {% if item.opinion or item.target %}<span class="meta">· {{ item.opinion }} {{ item.target }}</span>{% endif %}
+          {% if item.opinion or item.target %}<span class="meta">·{% if item.opinion %} {{ item.opinion }}{% endif %}{% if item.target %} {{ item.target }}{% endif %}</span>{% endif %}
         </a>
       </li>
       {% endfor %}
