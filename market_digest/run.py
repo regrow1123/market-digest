@@ -23,7 +23,7 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
-from market_digest.fetchers import hankyung, sec_edgar, yfinance_recs
+from market_digest.fetchers import fmp, hankyung, sec_edgar
 from market_digest.models import Digest
 from market_digest.summarize import summarize
 from market_digest.web import build as web_build
@@ -111,7 +111,7 @@ def run(date: str, dry_run: bool) -> int:
             n = sec_edgar.fetch_and_save(
                 date=date,
                 inbox_dir=inbox_dir,
-                watchlist=cfg["yfinance"]["watchlist"],
+                watchlist=cfg["watchlist"],
                 form_types=cfg["sec_edgar"]["form_types"],
                 max_items=cfg["sec_edgar"]["max_items"],
                 user_agent=ua,
@@ -122,17 +122,22 @@ def run(date: str, dry_run: bool) -> int:
         except Exception as exc:
             log.exception("sec_edgar fetcher failed: %s", exc)
 
-    if cfg["yfinance"]["enabled"]:
+    if cfg["fmp"]["enabled"]:
         try:
-            n = yfinance_recs.fetch_and_save(
+            api_key = os.environ.get("FMP_API_KEY", "")
+            n = fmp.fetch_and_save(
                 date=date,
                 inbox_dir=inbox_dir,
-                watchlist=cfg["yfinance"]["watchlist"],
+                api_key=api_key,
+                min_market_cap_usd=cfg["fmp"]["min_market_cap_usd"],
+                target_change_threshold=cfg["fmp"]["target_change_threshold"],
+                page_limit=cfg["fmp"]["page_limit"],
+                request_interval_sec=cfg["fmp"]["request_interval_sec"],
             )
-            log.info("yfinance: %d analyst changes saved", n)
+            log.info("fmp: %d rating changes saved", n)
             total += n
         except Exception as exc:
-            log.exception("yfinance fetcher failed: %s", exc)
+            log.exception("fmp fetcher failed: %s", exc)
 
     log.info("fetch phase done: %d total items in inbox", total)
 
