@@ -204,3 +204,23 @@ def test_card_omits_blurb_span_when_none():
     html = render_card_page(d, prev_date=None, next_date=None)
     soup = BeautifulSoup(html, "html.parser")
     assert soup.select_one("a.card .blurb") is None
+
+
+def test_detail_renders_company_blurb_when_present():
+    d = Digest.model_validate({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{
+                "id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                "headline": "h", "body_md": "b",
+                "company_blurb": "미국 스마트폰·서비스",
+            }],
+        }],
+    })
+    html = render_detail_page(
+        digest=d, group_index=0, item_index=0, flat_ids=["us-rating-0"]
+    )
+    soup = BeautifulSoup(html, "html.parser")
+    b = soup.select_one("article .blurb")
+    assert b is not None and "미국 스마트폰" in b.text

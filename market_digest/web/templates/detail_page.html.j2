@@ -12,6 +12,7 @@
     {% if item.name %}{{ item.name }}{% if item.ticker %} ({{ item.ticker }}){% endif %}{% else %}{{ item.headline }}{% endif %}
     {% if item.house %}<span class="tag">[{{ item.house }}]</span>{% endif %}
   </h1>
+  {% if item.company_blurb %}<p class="blurb">{{ item.company_blurb }}</p>{% endif %}
   {% if item.opinion or item.target %}
   <p class="meta">{% if item.opinion %}{{ item.opinion }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</p>
   {% endif %}
