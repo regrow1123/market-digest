@@ -19,6 +19,15 @@ import requests
 log = logging.getLogger(__name__)
 
 
+import re
+
+_KR_TICKER_RE = re.compile(r"^\d{6}$")
+
+
+def _is_korean_ticker(ticker: str) -> bool:
+    return bool(_KR_TICKER_RE.match(ticker or ""))
+
+
 class BlurbCache:
     """90-day TTL cache of (ticker -> blurb). Corrupt files are tolerated."""
 
@@ -110,8 +119,9 @@ def generate_blurb(
     prompt = (
         f"다음 회사를 한국어 한 줄(최대 60자)로 요약하라. "
         f"'~회사' 같은 상투어는 빼고 사업 핵심만. "
+        f"잘 알려지지 않은 기업이라 확신이 서지 않으면 '정보 없음' 한 단어만 답하라. "
         f"출력은 한 줄 텍스트만.\n\n"
-        f"티커: {ticker}\n이름: {display_name}\n설명: {base_desc}"
+        f"티커: {ticker}\n이름: {display_name}\n설명: {base_desc or '(미제공)'}"
     )
     cmd = [
         claude_cli,
@@ -136,7 +146,10 @@ def generate_blurb(
     text = proc.stdout.strip().splitlines()
     if not text:
         return None
-    return text[0].strip()[:_BLURB_MAX]
+    line = text[0].strip()[:_BLURB_MAX]
+    if line in {"정보 없음", "정보없음"}:
+        return None
+    return line
 
 
 def enrich_digest(
@@ -169,10 +182,10 @@ def enrich_digest(
                 item["company_blurb"] = existing
                 mutated = True
                 continue
-            description = fetch_company_description(ticker, api_key)
-            if not description:
-                log.info("enrich: no description for %s; skipping blurb", ticker)
-                continue
+            if _is_korean_ticker(ticker):
+                description = None
+            else:
+                description = fetch_company_description(ticker, api_key)
             blurb = generate_blurb(
                 ticker=ticker,
                 name=item.get("name"),
