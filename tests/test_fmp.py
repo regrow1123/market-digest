@@ -84,7 +84,8 @@ def test_fetch_and_save_writes_yaml_txt(tmp_path):
     content = out[0].read_text(encoding="utf-8")
     assert "ticker: \"AAPL\"" in content
     assert "firm: \"Morgan Stanley\"" in content
-    assert "target: \"150.0 -> 180.0\"" in content
+    assert "price_target: \"180.0\"" in content
+    assert "previous_price_target: \"150.0\"" in content
     assert "Rating: Hold -> Buy" in content
 
 

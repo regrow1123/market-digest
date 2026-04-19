@@ -89,14 +89,6 @@ def _yaml_front_matter(ch: RatingChange) -> str:
     for k, v in asdict(ch).items():
         s = "" if v is None else str(v).replace("\n", " ").strip()
         lines.append(f'{k}: "{s}"')
-    # combined target string for downstream convenience
-    if ch.previous_price_target is not None and ch.price_target is not None:
-        target_combined = f"{ch.previous_price_target} -> {ch.price_target}"
-    elif ch.price_target is not None:
-        target_combined = str(ch.price_target)
-    else:
-        target_combined = ""
-    lines.append(f'target: "{target_combined}"')
     lines.append('source: "fmp"')
     lines.append("---")
     return "\n".join(lines)
