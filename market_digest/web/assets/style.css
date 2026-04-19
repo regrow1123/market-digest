@@ -99,3 +99,17 @@ article .source a { color: var(--accent); }
 
 p.empty { color: var(--muted); text-align: center; margin: 48px 0; }
 p.subtitle { color: var(--muted); font-size: 14px; }
+
+a.card .blurb {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: normal;
+}
+
+article .blurb {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 12px;
+}
