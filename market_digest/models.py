@@ -22,6 +22,7 @@ class Item(BaseModel):
     opinion: str | None = None
     target: str | None = None
     url: str | None = None
+    company_blurb: str | None = None
 
 
 class Group(BaseModel):

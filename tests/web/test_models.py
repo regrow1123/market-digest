@@ -82,3 +82,18 @@ def test_group_category_restricted_set():
 def test_digest_date_format_yyyy_mm_dd():
     with pytest.raises(ValidationError):
         Digest.model_validate({"date": "20260419", "groups": []})
+
+
+def test_item_accepts_company_blurb():
+    item = Item.model_validate({
+        "id": "us-rating-0",
+        "headline": "h",
+        "body_md": "b",
+        "company_blurb": "미국 스마트폰 제조사",
+    })
+    assert item.company_blurb == "미국 스마트폰 제조사"
+
+
+def test_item_company_blurb_defaults_to_none():
+    item = Item.model_validate({"id": "x", "headline": "h", "body_md": "b"})
+    assert item.company_blurb is None
