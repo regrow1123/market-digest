@@ -1,0 +1,23 @@
+{% extends "base.html.j2" %}
+{% block title %}{{ item.name or item.headline }} · {{ digest.date }}{% endblock %}
+{% block content %}
+<header class="date-header">
+  <a class="back" href="../{{ digest.date }}.html">←&nbsp;{{ digest.date }}</a>
+  {% if prev_id %}<a class="nav-prev" href="{{ prev_id }}.html">◀</a>{% else %}<span class="nav-prev disabled">◀</span>{% endif %}
+  {% if next_id %}<a class="nav-next" href="{{ next_id }}.html">▶</a>{% else %}<span class="nav-next disabled">▶</span>{% endif %}
+</header>
+
+<article>
+  <h1>
+    {% if item.name %}{{ item.name }}{% if item.ticker %} ({{ item.ticker }}){% endif %}{% else %}{{ item.headline }}{% endif %}
+    {% if item.house %}<span class="tag">[{{ item.house }}]</span>{% endif %}
+  </h1>
+  {% if item.opinion or item.target %}
+  <p class="meta">{% if item.opinion %}{{ item.opinion }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</p>
+  {% endif %}
+  <div class="body">
+    {{ body_html|safe }}
+  </div>
+  {% if item.url %}<p class="source"><a href="{{ item.url }}" rel="noopener">원문 링크</a></p>{% endif %}
+</article>
+{% endblock %}

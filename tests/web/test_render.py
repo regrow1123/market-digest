@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 
 from market_digest.models import Digest
-from market_digest.web.builder import render_card_page
+from market_digest.web.builder import render_card_page, render_detail_page
 
 
 def _digest() -> Digest:
@@ -98,3 +98,68 @@ def test_card_meta_omits_none_fields():
     )
     html = render_card_page(d, prev_date=None, next_date=None)
     assert "None" not in html
+
+
+def _group_with_three_items():
+    return {
+        "region": "kr",
+        "category": "company",
+        "title": "국내 기업리포트",
+        "items": [
+            {"id": "kr-company-0", "headline": "A", "body_md": "- body A"},
+            {"id": "kr-company-1", "headline": "B", "body_md": "- body B"},
+            {"id": "kr-company-2", "headline": "C", "body_md": "- body C"},
+        ],
+    }
+
+
+def test_detail_renders_body_md_as_html():
+    d = Digest.model_validate({"date": "2026-04-19", "groups": [_group_with_three_items()]})
+    html = render_detail_page(
+        digest=d,
+        group_index=0,
+        item_index=1,
+        flat_ids=["kr-company-0", "kr-company-1", "kr-company-2"],
+    )
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.select_one("main.page article") is not None
+    # markdown-it renders `- body B` as a <ul><li>body B</li></ul>
+    li = soup.select_one("article li")
+    assert li is not None and "body B" in li.text
+
+
+def test_detail_prev_next_within_day():
+    d = Digest.model_validate({"date": "2026-04-19", "groups": [_group_with_three_items()]})
+    html = render_detail_page(
+        digest=d,
+        group_index=0,
+        item_index=1,
+        flat_ids=["kr-company-0", "kr-company-1", "kr-company-2"],
+    )
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.select_one("a.nav-prev")["href"] == "kr-company-0.html"
+    assert soup.select_one("a.nav-next")["href"] == "kr-company-2.html"
+
+
+def test_detail_prev_disabled_at_first_item():
+    d = Digest.model_validate({"date": "2026-04-19", "groups": [_group_with_three_items()]})
+    html = render_detail_page(
+        digest=d,
+        group_index=0,
+        item_index=0,
+        flat_ids=["kr-company-0", "kr-company-1", "kr-company-2"],
+    )
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.select_one(".nav-prev.disabled") is not None
+
+
+def test_detail_back_link_to_card_page():
+    d = Digest.model_validate({"date": "2026-04-19", "groups": [_group_with_three_items()]})
+    html = render_detail_page(
+        digest=d,
+        group_index=0,
+        item_index=0,
+        flat_ids=["kr-company-0"],
+    )
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.select_one("a.back")["href"] == "../2026-04-19.html"

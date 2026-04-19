@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 from jinja2 import Environment, PackageLoader, select_autoescape
+from markdown_it import MarkdownIt
 from pydantic import ValidationError
 
 from market_digest.models import CardIndexEntry, Digest
@@ -21,6 +22,8 @@ _env = Environment(
 )
 
 _WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"]
+
+_md = MarkdownIt("commonmark", {"breaks": True, "linkify": True})
 
 
 def _flag(region: str) -> str:
@@ -87,4 +90,29 @@ def render_card_page(digest: Digest, *, prev_date: str | None, next_date: str | 
         next_date=next_date,
         weekday=_weekday(digest.date),
         asset_prefix="",
+    )
+
+
+def render_detail_page(
+    *,
+    digest: Digest,
+    group_index: int,
+    item_index: int,
+    flat_ids: list[str],
+) -> str:
+    group = digest.groups[group_index]
+    item = group.items[item_index]
+    current = item.id
+    pos = flat_ids.index(current)
+    prev_id = flat_ids[pos - 1] if pos > 0 else None
+    next_id = flat_ids[pos + 1] if pos < len(flat_ids) - 1 else None
+    body_html = _md.render(item.body_md)
+    template = _env.get_template("detail_page.html.j2")
+    return template.render(
+        digest=digest,
+        item=item,
+        prev_id=prev_id,
+        next_id=next_id,
+        body_html=body_html,
+        asset_prefix="../",
     )
