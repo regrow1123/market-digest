@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 from datetime import date as _date
 from pathlib import Path
+
+import requests
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +62,6 @@ class BlurbCache:
         )
 
 
-import requests
-
 _PROFILE_URL = "https://financialmodelingprep.com/api/v3/profile/{ticker}"
 
 
@@ -85,8 +86,6 @@ def fetch_company_description(ticker: str, api_key: str) -> str | None:
     desc = data[0].get("description")
     return desc if isinstance(desc, str) and desc.strip() else None
 
-
-import subprocess
 
 _BLURB_MAX = 120
 
