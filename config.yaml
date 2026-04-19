@@ -38,3 +38,6 @@ claude:
   permission_mode: dontAsk
   timeout_sec: 900          # subprocess timeout (15 min)
   max_budget_usd: null      # e.g. 1.0 to cap per-run cost
+  blurb_model: "claude-sonnet-4-6"
+  research_model: "claude-opus-4-7"
+  blurb_cache_ttl_days: 90

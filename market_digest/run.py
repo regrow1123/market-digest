@@ -158,6 +158,20 @@ def run(date: str, dry_run: bool) -> int:
         pass
 
     try:
+        from market_digest.enrich import enrich_digest
+        enrich_digest(
+            json_path=result.json_path,
+            cache_path=nas_dir / "blurbs.json",
+            api_key=os.environ.get("FMP_API_KEY", ""),
+            claude_cli=cfg["claude"]["cli_path"],
+            model=cfg["claude"]["blurb_model"],
+            ttl_days=cfg["claude"]["blurb_cache_ttl_days"],
+        )
+        log.info("enrich: blurbs refreshed")
+    except Exception as exc:
+        log.exception("enrich failed (continuing): %s", exc)
+
+    try:
         site = web_build(nas_dir)
         log.info("web.build: site=%s", site)
     except Exception as exc:

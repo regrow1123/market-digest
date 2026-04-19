@@ -51,6 +51,7 @@
 - `items[].opinion`: 투자의견 (`Buy`, `Hold`, ...) — 없으면 생략
 - `items[].target`: 목표가. 변경 시 `"85,000 → 95,000"` 형식 — 없으면 생략
 - `items[].url`: 원문 URL — 없으면 생략
+- `items[].company_blurb`: **이 필드는 생성하지 말고 비워둘 것**. 후처리 단계에서 외부 소스로 자동 채운다.
 - `items[].house`, `items[].ticker`, `items[].name`: 식별 불가 시 생략
 
 그룹이 없는 섹션은 `groups` 배열에서 아예 뺀다.
