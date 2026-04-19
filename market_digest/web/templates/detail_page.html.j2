@@ -20,5 +20,6 @@
     {{ body_html|safe }}
   </div>
   {% if item.url %}<p class="source"><a href="{{ item.url }}" rel="noopener">원문 링크</a></p>{% endif %}
+  {% if has_research %}<p class="source"><a class="research-link" href="{{ item.id }}.research.html" rel="noopener">🔍 딥 리서치</a></p>{% endif %}
 </article>
 {% endblock %}

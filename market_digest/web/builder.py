@@ -102,6 +102,7 @@ def render_detail_page(
     group_index: int,
     item_index: int,
     flat_ids: list[str],
+    has_research: bool = False,
 ) -> str:
     group = digest.groups[group_index]
     item = group.items[item_index]
@@ -117,6 +118,17 @@ def render_detail_page(
         prev_id=prev_id,
         next_id=next_id,
         body_html=body_html,
+        has_research=has_research,
+        asset_prefix="../",
+    )
+
+
+def render_research_page(*, digest: Digest, item, body_html: str) -> str:
+    template = _env.get_template("research_page.html.j2")
+    return template.render(
+        digest=digest,
+        item=item,
+        body_html=body_html,
         asset_prefix="../",
     )
 
@@ -128,6 +140,17 @@ def render_search_page() -> str:
 
 def _flat_ids_for_day(digest: Digest) -> list[str]:
     return [item.id for group in digest.groups for item in group.items]
+
+
+def _research_md_path(nas_dir: Path, ticker: str | None, date_str: str) -> Path | None:
+    if not ticker:
+        return None
+    return nas_dir / "research" / f"{ticker.upper()}-{date_str}.md"
+
+
+def _research_md_exists(nas_dir: Path, ticker: str | None, date_str: str) -> bool:
+    p = _research_md_path(nas_dir, ticker, date_str)
+    return p is not None and p.exists()
 
 
 def _copy_assets(site: Path) -> None:
@@ -179,13 +202,25 @@ def build(nas_dir: Path) -> Path:
             day_dir.mkdir(exist_ok=True)
         for gi, group in enumerate(digest.groups):
             for ii, item in enumerate(group.items):
+                has_research = _research_md_exists(nas_dir, item.ticker, digest.date)
                 detail_html = render_detail_page(
                     digest=digest,
                     group_index=gi,
                     item_index=ii,
                     flat_ids=flat_ids,
+                    has_research=has_research,
                 )
                 (day_dir / f"{item.id}.html").write_text(detail_html, encoding="utf-8")
+
+                research_md = _research_md_path(nas_dir, item.ticker, digest.date)
+                if research_md is not None and research_md.exists():
+                    research_html = render_research_page(
+                        digest=digest, item=item,
+                        body_html=_md.render(research_md.read_text(encoding="utf-8")),
+                    )
+                    (day_dir / f"{item.id}.research.html").write_text(
+                        research_html, encoding="utf-8"
+                    )
 
     # index.html = latest day's card page (or a minimal placeholder page)
     if digests:
