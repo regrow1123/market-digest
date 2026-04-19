@@ -53,3 +53,20 @@ def test_index_excludes_body_md():
 def test_index_empty_when_no_items():
     d = Digest.model_validate({"date": "2026-04-19", "groups": []})
     assert build_index([d]) == []
+
+
+def test_index_includes_company_blurb():
+    d = Digest.model_validate({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{
+                "id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                "headline": "h", "body_md": "-",
+                "company_blurb": "미국 스마트폰",
+            }],
+        }],
+    })
+    entries = build_index([d])
+    dumped = entries[0].model_dump(exclude_none=True)
+    assert dumped.get("company_blurb") == "미국 스마트폰"

@@ -20,7 +20,8 @@
       const nameLine = c.name ? `<span class="name">${c.name}</span>` : "";
       const ticker = c.ticker ? ` (${c.ticker})` : "";
       const meta = (c.opinion || c.target) ? `<span class="meta">· ${c.opinion || ""} ${c.target || ""}</span>` : "";
-      return `<li><a class="card" href="${href}"><span class="date-chip">${c.date}</span> ${flag} ${tag} ${nameLine}${ticker} <span class="dash">—</span> <span class="headline">${c.headline}</span> ${meta}</a></li>`;
+      const blurb = c.company_blurb ? `<span class="blurb">${c.company_blurb}</span>` : "";
+      return `<li><a class="card" href="${href}"><span class="date-chip">${c.date}</span> ${flag} ${tag} ${nameLine}${ticker} <span class="dash">—</span> <span class="headline">${c.headline}</span> ${meta}${blurb}</a></li>`;
     }).join("");
   };
 

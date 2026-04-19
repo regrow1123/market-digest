@@ -57,3 +57,4 @@ class CardIndexEntry(BaseModel):
     name: str | None = None
     opinion: str | None = None
     target: str | None = None
+    company_blurb: str | None = None

@@ -80,6 +80,7 @@ def build_index(digests: list[Digest]) -> list[CardIndexEntry]:
                         name=item.name,
                         opinion=item.opinion,
                         target=item.target,
+                        company_blurb=item.company_blurb,
                     )
                 )
     return entries
