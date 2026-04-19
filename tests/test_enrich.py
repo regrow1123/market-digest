@@ -123,3 +123,116 @@ def test_generate_blurb_truncates_to_120_chars():
         )
     assert out is not None
     assert len(out) <= 120
+
+
+from market_digest.enrich import enrich_digest
+
+
+def test_enrich_digest_fills_from_cache_without_network(tmp_path):
+    blurbs = tmp_path / "blurbs.json"
+    today = date(2026, 4, 20).isoformat()
+    blurbs.write_text(json.dumps({
+        "AAPL": {"blurb": "미국 스마트폰", "fetched_at": today, "source": "cache"},
+    }))
+
+    json_path = tmp_path / "2026-04-20.json"
+    json_path.write_text(json.dumps({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                       "headline": "h", "body_md": "b"}],
+        }],
+    }), encoding="utf-8")
+
+    with patch("market_digest.enrich.fetch_company_description") as fcd, \
+         patch("market_digest.enrich.generate_blurb") as gb:
+        enrich_digest(
+            json_path=json_path,
+            cache_path=blurbs,
+            api_key="dummy",
+            claude_cli="/bin/claude",
+            model="m",
+            ttl_days=90,
+            today=date(2026, 4, 20),
+        )
+
+    fcd.assert_not_called()
+    gb.assert_not_called()
+    out = json.loads(json_path.read_text())
+    assert out["groups"][0]["items"][0]["company_blurb"] == "미국 스마트폰"
+
+
+def test_enrich_digest_generates_when_cache_miss(tmp_path):
+    blurbs = tmp_path / "blurbs.json"
+    json_path = tmp_path / "2026-04-20.json"
+    json_path.write_text(json.dumps({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{"id": "us-rating-0", "ticker": "NVDA", "name": "NVIDIA",
+                       "headline": "h", "body_md": "b"}],
+        }],
+    }), encoding="utf-8")
+
+    with patch("market_digest.enrich.fetch_company_description",
+               return_value="NVIDIA designs GPUs and accelerated computing platforms."), \
+         patch("market_digest.enrich.generate_blurb",
+               return_value="GPU·AI 가속기 설계사"):
+        enrich_digest(
+            json_path=json_path, cache_path=blurbs,
+            api_key="dummy", claude_cli="/bin/claude", model="m",
+            ttl_days=90, today=date(2026, 4, 20),
+        )
+
+    out = json.loads(json_path.read_text())
+    assert out["groups"][0]["items"][0]["company_blurb"] == "GPU·AI 가속기 설계사"
+    cached = json.loads(blurbs.read_text())
+    assert cached["NVDA"]["blurb"] == "GPU·AI 가속기 설계사"
+
+
+def test_enrich_digest_skips_items_without_ticker(tmp_path):
+    blurbs = tmp_path / "blurbs.json"
+    json_path = tmp_path / "2026-04-20.json"
+    json_path.write_text(json.dumps({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "kr", "category": "industry", "title": "국내 시황·산업",
+            "items": [{"id": "kr-industry-0", "headline": "반도체 업황", "body_md": "-"}],
+        }],
+    }), encoding="utf-8")
+
+    with patch("market_digest.enrich.fetch_company_description") as fcd:
+        enrich_digest(
+            json_path=json_path, cache_path=blurbs,
+            api_key="dummy", claude_cli="/bin/claude", model="m",
+            ttl_days=90, today=date(2026, 4, 20),
+        )
+
+    fcd.assert_not_called()
+    out = json.loads(json_path.read_text())
+    assert out["groups"][0]["items"][0].get("company_blurb") in (None, "")
+
+
+def test_enrich_digest_tolerates_generate_failure(tmp_path):
+    blurbs = tmp_path / "blurbs.json"
+    json_path = tmp_path / "2026-04-20.json"
+    json_path.write_text(json.dumps({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                       "headline": "h", "body_md": "b"}],
+        }],
+    }), encoding="utf-8")
+
+    with patch("market_digest.enrich.fetch_company_description", return_value="x"), \
+         patch("market_digest.enrich.generate_blurb", return_value=None):
+        enrich_digest(
+            json_path=json_path, cache_path=blurbs,
+            api_key="dummy", claude_cli="/bin/claude", model="m",
+            ttl_days=90, today=date(2026, 4, 20),
+        )
+
+    out = json.loads(json_path.read_text())
+    assert out["groups"][0]["items"][0].get("company_blurb") in (None, "")

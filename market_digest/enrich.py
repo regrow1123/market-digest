@@ -133,3 +133,53 @@ def generate_blurb(
     if not text:
         return None
     return text[0].strip()[:_BLURB_MAX]
+
+
+def enrich_digest(
+    *,
+    json_path: Path,
+    cache_path: Path,
+    api_key: str,
+    claude_cli: str,
+    model: str,
+    ttl_days: int,
+    today: _date | None = None,
+) -> None:
+    """Load the digest JSON, fill company_blurb for items with a ticker, write back.
+
+    - Cache-hit items use the stored blurb (no network).
+    - Cache-miss items fetch FMP description and generate a Sonnet blurb.
+    - Items without `ticker` are skipped.
+    """
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    cache = BlurbCache(cache_path, ttl_days=ttl_days, today=today)
+    mutated = False
+
+    for group in data.get("groups", []):
+        for item in group.get("items", []):
+            ticker = item.get("ticker")
+            if not ticker:
+                continue
+            existing = cache.get(ticker)
+            if existing is not None:
+                item["company_blurb"] = existing
+                mutated = True
+                continue
+            description = fetch_company_description(ticker, api_key)
+            blurb = generate_blurb(
+                ticker=ticker,
+                name=item.get("name"),
+                description=description,
+                claude_cli=claude_cli,
+                model=model,
+            )
+            if blurb:
+                cache.set(ticker, blurb, source="fmp+sonnet")
+                item["company_blurb"] = blurb
+                mutated = True
+
+    cache.save()
+    if mutated:
+        json_path.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
