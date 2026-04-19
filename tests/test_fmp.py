@@ -2,111 +2,132 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
-from market_digest.fetchers.fmp import _filter_records, fetch_and_save
+from market_digest.fetchers.fmp import (
+    _filter_grades,
+    _filter_targets,
+    fetch_and_save,
+)
 
 
-def test_filter_keeps_initiate_regardless_of_target_change():
+def test_filter_grades_drops_maintain():
     records = [
-        {"symbol": "AAPL", "action": "initiate", "newGrade": "Buy",
-         "previousGrade": "", "gradingCompany": "MS", "publishedDate": "2026-04-20 12:00:00",
-         "priceWhenPosted": 150.0, "priceTarget": 170.0, "previousPriceTarget": None,
-         "newsURL": "https://example.com/a", "newsTitle": "t"},
+        {"symbol": "AAPL", "action": "maintain", "newGrade": "Buy",
+         "previousGrade": "Buy", "gradingCompany": "X",
+         "publishedDate": "2026-04-20", "newsURL": "", "newsTitle": ""},
     ]
     mcap = {"AAPL": 2_000_000_000_000}
-    kept = _filter_records(records, mcap, min_market_cap_usd=1_000_000_000,
-                           target_change_threshold=0.10)
-    assert len(kept) == 1
+    assert _filter_grades(records, mcap, min_mcap=1_000_000_000) == []
 
 
-def test_filter_drops_below_mcap_floor():
+def test_filter_grades_keeps_upgrade_downgrade_initiate():
     records = [
-        {"symbol": "TINY", "action": "upgrade", "newGrade": "Buy",
-         "previousGrade": "Hold", "gradingCompany": "X", "publishedDate": "2026-04-20",
-         "priceWhenPosted": 5.0, "priceTarget": 8.0, "previousPriceTarget": 6.0,
-         "newsURL": "", "newsTitle": ""},
+        {"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
+         "previousGrade": "Hold", "gradingCompany": "X",
+         "publishedDate": "2026-04-20", "newsURL": "", "newsTitle": ""},
+        {"symbol": "MSFT", "action": "downgrade", "newGrade": "Hold",
+         "previousGrade": "Buy", "gradingCompany": "Y",
+         "publishedDate": "2026-04-20", "newsURL": "", "newsTitle": ""},
+        {"symbol": "NVDA", "action": "initiate", "newGrade": "Buy",
+         "previousGrade": None, "gradingCompany": "Z",
+         "publishedDate": "2026-04-20", "newsURL": "", "newsTitle": ""},
     ]
+    mcap = {"AAPL": 3e12, "MSFT": 3e12, "NVDA": 3e12}
+    kept = _filter_grades(records, mcap, min_mcap=1e9)
+    assert len(kept) == 3
+
+
+def test_filter_grades_drops_below_mcap_floor():
+    records = [{"symbol": "TINY", "action": "upgrade", "newGrade": "Buy",
+                "previousGrade": "Hold", "gradingCompany": "X",
+                "publishedDate": "2026-04-20", "newsURL": "", "newsTitle": ""}]
     mcap = {"TINY": 500_000_000}
-    kept = _filter_records(records, mcap, min_market_cap_usd=1_000_000_000,
-                           target_change_threshold=0.10)
-    assert kept == []
+    assert _filter_grades(records, mcap, min_mcap=1_000_000_000) == []
 
 
-def test_filter_drops_small_target_moves_on_non_initiate():
+def test_filter_targets_gates_on_mcap():
     records = [
-        {"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
-         "previousGrade": "Hold", "gradingCompany": "X", "publishedDate": "2026-04-20",
-         "priceWhenPosted": 150.0, "priceTarget": 155.0, "previousPriceTarget": 150.0,
-         "newsURL": "", "newsTitle": ""},
+        {"symbol": "AAPL", "priceTarget": 180, "publishedDate": "2026-04-20"},
+        {"symbol": "TINY", "priceTarget": 10, "publishedDate": "2026-04-20"},
     ]
-    mcap = {"AAPL": 2_000_000_000_000}
-    kept = _filter_records(records, mcap, min_market_cap_usd=1_000_000_000,
-                           target_change_threshold=0.10)
-    assert kept == []
-
-
-def test_filter_keeps_large_target_moves():
-    records = [
-        {"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
-         "previousGrade": "Hold", "gradingCompany": "X", "publishedDate": "2026-04-20",
-         "priceWhenPosted": 150.0, "priceTarget": 180.0, "previousPriceTarget": 150.0,
-         "newsURL": "", "newsTitle": ""},
-    ]
-    mcap = {"AAPL": 2_000_000_000_000}
-    kept = _filter_records(records, mcap, min_market_cap_usd=1_000_000_000,
-                           target_change_threshold=0.10)
+    mcap = {"AAPL": 3e12, "TINY": 5e8}
+    kept = _filter_targets(records, mcap, min_mcap=1e9)
     assert len(kept) == 1
+    assert kept[0]["symbol"] == "AAPL"
 
 
-def test_fetch_and_save_writes_yaml_txt(tmp_path):
-    rows = [
-        {"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
-         "previousGrade": "Hold", "gradingCompany": "Morgan Stanley",
-         "publishedDate": "2026-04-20 06:30:00",
-         "priceWhenPosted": 150.0, "priceTarget": 180.0, "previousPriceTarget": 150.0,
-         "newsURL": "https://x.com/r", "newsTitle": "MS upgrades AAPL"},
-    ]
-    profiles = {"AAPL": {"mktCap": 2_000_000_000_000, "companyName": "Apple Inc."}}
+def test_fetch_and_save_writes_grade_and_target_files(tmp_path):
+    grades = [{"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
+               "previousGrade": "Hold", "gradingCompany": "Morgan Stanley",
+               "publishedDate": "2026-04-20T06:30:00.000Z",
+               "priceWhenPosted": 150.0,
+               "newsURL": "https://x.com/g", "newsTitle": "MS upgrades AAPL"}]
+    targets = [{"symbol": "AAPL", "priceTarget": 180, "adjPriceTarget": 180,
+                "priceWhenPosted": 150.0,
+                "publishedDate": "2026-04-20T06:30:00.000Z",
+                "analystCompany": "Goldman Sachs", "analystName": "Jane",
+                "newsURL": "https://x.com/t",
+                "newsTitle": "AAPL target raised to $180 from $160 at GS"}]
+    profiles = {"AAPL": {"marketCap": 2_000_000_000_000, "companyName": "Apple Inc."}}
 
-    with patch("market_digest.fetchers.fmp._fetch_feed", return_value=rows), \
+    with patch("market_digest.fetchers.fmp._fetch_grades", return_value=grades), \
+         patch("market_digest.fetchers.fmp._fetch_targets", return_value=targets), \
          patch("market_digest.fetchers.fmp._fetch_profile", side_effect=lambda t, k: profiles.get(t)):
         n = fetch_and_save(
             date="2026-04-20",
             inbox_dir=tmp_path,
             api_key="dummy",
             min_market_cap_usd=1_000_000_000,
-            target_change_threshold=0.10,
             page_limit=1,
             request_interval_sec=0,
         )
-    assert n == 1
-    out = list(tmp_path.glob("fmp_*.txt"))
-    assert len(out) == 1
-    content = out[0].read_text(encoding="utf-8")
-    assert "ticker: \"AAPL\"" in content
-    assert "firm: \"Morgan Stanley\"" in content
-    assert "price_target: \"180.0\"" in content
-    assert "previous_price_target: \"150.0\"" in content
-    assert "Rating: Hold -> Buy" in content
+    assert n == 2
+    grade_files = list(tmp_path.glob("fmp_grade_*.txt"))
+    target_files = list(tmp_path.glob("fmp_target_*.txt"))
+    assert len(grade_files) == 1
+    assert len(target_files) == 1
+
+    g_content = grade_files[0].read_text(encoding="utf-8")
+    assert "ticker: \"AAPL\"" in g_content
+    assert "firm: \"Morgan Stanley\"" in g_content
+    assert "Rating: Hold -> Buy" in g_content
+    assert "Action: upgrade" in g_content
+    assert 'source: "fmp_grades"' in g_content
+
+    t_content = target_files[0].read_text(encoding="utf-8")
+    assert "ticker: \"AAPL\"" in t_content
+    assert "firm: \"Goldman Sachs\"" in t_content
+    assert "Target: 180" in t_content
+    assert 'source: "fmp_targets"' in t_content
 
 
 def test_fetch_and_save_filters_by_date(tmp_path):
-    rows = [
-        {"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
-         "previousGrade": "Hold", "gradingCompany": "MS",
-         "publishedDate": "2026-04-19 06:30:00",  # different date
-         "priceWhenPosted": 150.0, "priceTarget": 180.0, "previousPriceTarget": 150.0,
-         "newsURL": "", "newsTitle": ""},
-    ]
-    profiles = {"AAPL": {"mktCap": 2_000_000_000_000, "companyName": "Apple Inc."}}
-    with patch("market_digest.fetchers.fmp._fetch_feed", return_value=rows), \
+    grades = [{"symbol": "AAPL", "action": "upgrade", "newGrade": "Buy",
+               "previousGrade": "Hold", "gradingCompany": "MS",
+               "publishedDate": "2026-04-19T06:30:00.000Z",
+               "priceWhenPosted": 150.0,
+               "newsURL": "", "newsTitle": ""}]
+    targets = []
+    profiles = {"AAPL": {"marketCap": 2e12}}
+    with patch("market_digest.fetchers.fmp._fetch_grades", return_value=grades), \
+         patch("market_digest.fetchers.fmp._fetch_targets", return_value=targets), \
          patch("market_digest.fetchers.fmp._fetch_profile", side_effect=lambda t, k: profiles.get(t)):
         n = fetch_and_save(
             date="2026-04-20",
             inbox_dir=tmp_path,
             api_key="dummy",
             min_market_cap_usd=1_000_000_000,
-            target_change_threshold=0.10,
             page_limit=1,
             request_interval_sec=0,
         )
     assert n == 0
+
+
+def test_fetch_and_save_skips_when_no_api_key(tmp_path):
+    assert fetch_and_save(
+        date="2026-04-20",
+        inbox_dir=tmp_path,
+        api_key="",
+        min_market_cap_usd=1_000_000_000,
+        page_limit=1,
+        request_interval_sec=0,
+    ) == 0

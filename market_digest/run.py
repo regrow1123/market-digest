@@ -130,7 +130,6 @@ def run(date: str, dry_run: bool) -> int:
                 inbox_dir=inbox_dir,
                 api_key=api_key,
                 min_market_cap_usd=cfg["fmp"]["min_market_cap_usd"],
-                target_change_threshold=cfg["fmp"]["target_change_threshold"],
                 page_limit=cfg["fmp"]["page_limit"],
                 request_interval_sec=cfg["fmp"]["request_interval_sec"],
             )
