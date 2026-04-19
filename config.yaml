@@ -15,7 +15,6 @@ sec_edgar:
 fmp:
   enabled: true
   min_market_cap_usd: 1000000000
-  page_limit: 3                   # pages of feed to fetch (100 records each)
   request_interval_sec: 1
 
 # watchlist is still consumed by sec_edgar; keep it at the top level

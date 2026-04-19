@@ -2,8 +2,14 @@
 
 Uses /stable/grades-latest-news (rating changes) and
 /stable/price-target-latest-news (target changes), both free tier.
-Both feeds are date-filtered and market-cap-gated. Saves one .txt per
-record under two prefixes: fmp_grade_* and fmp_target_*.
+
+Free-tier caps (verified 2026-04-20):
+  - limit <= 10 per feed call
+  - page must be 0 (pagination is premium-only)
+
+Result: up to 10 newest global rating changes + 10 newest target changes
+per run. Sufficient for discovery on most days but misses tail events on
+heavy news days. Upgrade tier to unlock pagination + larger limits.
 """
 from __future__ import annotations
 
@@ -49,7 +55,7 @@ class TargetChange:
     news_title: str
 
 
-def _fetch_grades(api_key: str, page: int, limit: int = 100) -> list[dict]:
+def _fetch_grades(api_key: str, page: int, limit: int = 10) -> list[dict]:
     resp = requests.get(
         GRADES_URL,
         params={"page": page, "limit": limit, "apikey": api_key},
@@ -60,7 +66,7 @@ def _fetch_grades(api_key: str, page: int, limit: int = 100) -> list[dict]:
     return data if isinstance(data, list) else []
 
 
-def _fetch_targets(api_key: str, page: int, limit: int = 100) -> list[dict]:
+def _fetch_targets(api_key: str, page: int, limit: int = 10) -> list[dict]:
     resp = requests.get(
         TARGETS_URL,
         params={"page": page, "limit": limit, "apikey": api_key},
@@ -118,7 +124,6 @@ def fetch_and_save(
     inbox_dir: Path,
     api_key: str,
     min_market_cap_usd: float,
-    page_limit: int,
     request_interval_sec: float,
     target_change_threshold: float | None = None,  # kept for back-compat; ignored
 ) -> int:
@@ -129,29 +134,20 @@ def fetch_and_save(
     inbox_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. Fetch both feeds
-    grades_raw: list[dict] = []
-    for page in range(page_limit):
-        try:
-            batch = _fetch_grades(api_key, page)
-        except Exception as exc:
-            log.warning("fmp: grades page=%d failed: %s", page, exc)
-            break
-        if not batch:
-            break
-        grades_raw.extend(batch)
-        time.sleep(request_interval_sec)
+    # Global rating feed — free tier caps at limit=10, page=0 only
+    try:
+        grades_raw = _fetch_grades(api_key, page=0)
+    except Exception as exc:
+        log.warning("fmp: grades fetch failed: %s", exc)
+        grades_raw = []
+    time.sleep(request_interval_sec)
 
-    targets_raw: list[dict] = []
-    for page in range(page_limit):
-        try:
-            batch = _fetch_targets(api_key, page)
-        except Exception as exc:
-            log.warning("fmp: targets page=%d failed: %s", page, exc)
-            break
-        if not batch:
-            break
-        targets_raw.extend(batch)
-        time.sleep(request_interval_sec)
+    try:
+        targets_raw = _fetch_targets(api_key, page=0)
+    except Exception as exc:
+        log.warning("fmp: targets fetch failed: %s", exc)
+        targets_raw = []
+    time.sleep(request_interval_sec)
 
     # 2. Filter by date
     grades_today = [r for r in grades_raw if str(r.get("publishedDate", ""))[:10] == date]

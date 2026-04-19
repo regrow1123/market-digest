@@ -77,7 +77,6 @@ def test_fetch_and_save_writes_grade_and_target_files(tmp_path):
             inbox_dir=tmp_path,
             api_key="dummy",
             min_market_cap_usd=1_000_000_000,
-            page_limit=1,
             request_interval_sec=0,
         )
     assert n == 2
@@ -116,7 +115,6 @@ def test_fetch_and_save_filters_by_date(tmp_path):
             inbox_dir=tmp_path,
             api_key="dummy",
             min_market_cap_usd=1_000_000_000,
-            page_limit=1,
             request_interval_sec=0,
         )
     assert n == 0
@@ -128,6 +126,5 @@ def test_fetch_and_save_skips_when_no_api_key(tmp_path):
         inbox_dir=tmp_path,
         api_key="",
         min_market_cap_usd=1_000_000_000,
-        page_limit=1,
         request_interval_sec=0,
     ) == 0
