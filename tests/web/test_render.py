@@ -172,3 +172,35 @@ def test_search_page_loads_cards_json():
     assert "cards.json" in html
     assert soup.select_one("input#search-input") is not None
     assert soup.select_one("#search-results") is not None
+
+
+def test_card_renders_company_blurb_when_present():
+    d = Digest.model_validate({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{
+                "id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                "headline": "MS upgrade", "body_md": "-",
+                "company_blurb": "미국 스마트폰·서비스 생태계",
+            }],
+        }],
+    })
+    html = render_card_page(d, prev_date=None, next_date=None)
+    soup = BeautifulSoup(html, "html.parser")
+    blurb = soup.select_one("a.card .blurb")
+    assert blurb is not None
+    assert "미국 스마트폰" in blurb.text
+
+
+def test_card_omits_blurb_span_when_none():
+    d = Digest.model_validate({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{"id": "us-rating-0", "headline": "h", "body_md": "-"}],
+        }],
+    })
+    html = render_card_page(d, prev_date=None, next_date=None)
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.select_one("a.card .blurb") is None

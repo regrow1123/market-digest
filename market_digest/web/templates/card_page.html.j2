@@ -23,6 +23,7 @@
           <span class="dash">—</span>
           <span class="headline">{{ item.headline }}</span>
           {% if item.opinion or item.target %}<span class="meta">·{% if item.opinion %} {{ item.opinion }}{% endif %}{% if item.target %} {{ item.target }}{% endif %}</span>{% endif %}
+          {% if item.company_blurb %}<span class="blurb">{{ item.company_blurb }}</span>{% endif %}
         </a>
       </li>
       {% endfor %}
