@@ -1,0 +1,8 @@
+# Append this block to /etc/caddy/Caddyfile.
+# Pick a port that's currently free (ss -tlnp to check; avoid 8080/8081/8082/8088/8123/3000/8501).
+
+:8086 {
+  root * /mnt/nas/market-digest/site
+  encode gzip
+  file_server
+}
