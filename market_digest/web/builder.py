@@ -116,3 +116,8 @@ def render_detail_page(
         body_html=body_html,
         asset_prefix="../",
     )
+
+
+def render_search_page() -> str:
+    template = _env.get_template("search.html.j2")
+    return template.render(asset_prefix="")

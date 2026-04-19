@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 
 from market_digest.models import Digest
-from market_digest.web.builder import render_card_page, render_detail_page
+from market_digest.web.builder import render_card_page, render_detail_page, render_search_page
 
 
 def _digest() -> Digest:
@@ -163,3 +163,12 @@ def test_detail_back_link_to_card_page():
     )
     soup = BeautifulSoup(html, "html.parser")
     assert soup.select_one("a.back")["href"] == "../2026-04-19.html"
+
+
+def test_search_page_loads_cards_json():
+    html = render_search_page()
+    soup = BeautifulSoup(html, "html.parser")
+    # The search page references cards.json via script
+    assert "cards.json" in html
+    assert soup.select_one("input#search-input") is not None
+    assert soup.select_one("#search-results") is not None
