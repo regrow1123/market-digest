@@ -72,3 +72,54 @@ def test_fetch_company_description_returns_none_on_empty_list():
         m.return_value.status_code = 200
         m.return_value.json.return_value = []
         assert fetch_company_description("AAPL", "key") is None
+
+
+from market_digest.enrich import generate_blurb
+
+
+def _make_proc(stdout: str, returncode: int = 0):
+    class R:
+        def __init__(self):
+            self.stdout = stdout
+            self.stderr = ""
+            self.returncode = returncode
+    return R()
+
+
+def test_generate_blurb_strips_and_returns_single_line():
+    with patch("market_digest.enrich.subprocess.run",
+               return_value=_make_proc("  한국 메모리반도체 제조사\n\n")) as m:
+        out = generate_blurb(
+            ticker="005930",
+            name="삼성전자",
+            description="Samsung Electronics ...",
+            claude_cli="/usr/bin/claude",
+            model="claude-sonnet-4-6",
+        )
+    assert out == "한국 메모리반도체 제조사"
+    args, _ = m.call_args
+    cmd = args[0]
+    assert cmd[0] == "/usr/bin/claude"
+    assert "--model" in cmd
+    assert "claude-sonnet-4-6" in cmd
+
+
+def test_generate_blurb_returns_none_on_nonzero_exit():
+    with patch("market_digest.enrich.subprocess.run",
+               return_value=_make_proc("", returncode=2)):
+        assert generate_blurb(
+            ticker="AAPL", name="Apple", description="x",
+            claude_cli="/bin/claude", model="m",
+        ) is None
+
+
+def test_generate_blurb_truncates_to_120_chars():
+    long = "가" * 500
+    with patch("market_digest.enrich.subprocess.run",
+               return_value=_make_proc(long)):
+        out = generate_blurb(
+            ticker="X", name="X", description="x",
+            claude_cli="/bin/claude", model="m",
+        )
+    assert out is not None
+    assert len(out) <= 120

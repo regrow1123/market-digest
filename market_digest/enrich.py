@@ -84,3 +84,52 @@ def fetch_company_description(ticker: str, api_key: str) -> str | None:
         return None
     desc = data[0].get("description")
     return desc if isinstance(desc, str) and desc.strip() else None
+
+
+import subprocess
+
+_BLURB_MAX = 120
+
+
+def generate_blurb(
+    *,
+    ticker: str,
+    name: str | None,
+    description: str | None,
+    claude_cli: str,
+    model: str,
+    timeout_sec: int = 60,
+) -> str | None:
+    """One-shot Sonnet call to compress a company description to a Korean one-liner."""
+    display_name = name or ticker
+    base_desc = (description or "").strip()
+    prompt = (
+        f"다음 회사를 한국어 한 줄(최대 60자)로 요약하라. "
+        f"'~회사' 같은 상투어는 빼고 사업 핵심만. "
+        f"출력은 한 줄 텍스트만.\n\n"
+        f"티커: {ticker}\n이름: {display_name}\n설명: {base_desc}"
+    )
+    cmd = [
+        claude_cli,
+        "-p", prompt,
+        "--model", model,
+        "--allowed-tools", "",
+        "--permission-mode", "dontAsk",
+        "--output-format", "text",
+        "--no-session-persistence",
+    ]
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout_sec, check=False
+        )
+    except subprocess.TimeoutExpired:
+        log.warning("enrich: sonnet timeout for %s", ticker)
+        return None
+    if proc.returncode != 0:
+        log.warning("enrich: sonnet rc=%s for %s: %s",
+                    proc.returncode, ticker, proc.stderr[:200])
+        return None
+    text = proc.stdout.strip().splitlines()
+    if not text:
+        return None
+    return text[0].strip()[:_BLURB_MAX]
