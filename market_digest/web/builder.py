@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import json as _json
 import logging
+import shutil
+from importlib import resources
 from pathlib import Path
 
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -121,3 +124,92 @@ def render_detail_page(
 def render_search_page() -> str:
     template = _env.get_template("search.html.j2")
     return template.render(asset_prefix="")
+
+
+def _flat_ids_for_day(digest: Digest) -> list[str]:
+    return [item.id for group in digest.groups for item in group.items]
+
+
+def _copy_assets(site: Path) -> None:
+    dest = site / "assets"
+    dest.mkdir(parents=True, exist_ok=True)
+    pkg = resources.files("market_digest.web") / "assets"
+    for name in ("style.css", "search.js"):
+        src = pkg / name
+        (dest / name).write_bytes(src.read_bytes())
+
+
+def build(nas_dir: Path) -> Path:
+    """Generate the static site at `nas_dir/site/`. Returns the site path.
+
+    Writes to `site.tmp/` then renames to `site/` so a failed build leaves
+    the previous version untouched.
+    """
+    digests = collect_digests(nas_dir)
+    dates = [d.date for d in digests]
+
+    tmp = nas_dir / "site.tmp"
+    final = nas_dir / "site"
+    old = nas_dir / "site.old"
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    tmp.mkdir(parents=True)
+
+    # cards.json (search index)
+    entries = build_index(digests)
+    (tmp / "cards.json").write_text(
+        _json.dumps([e.model_dump(exclude_none=True) for e in entries], ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    # search page
+    (tmp / "search.html").write_text(render_search_page(), encoding="utf-8")
+
+    # per-day pages
+    for i, digest in enumerate(digests):
+        prev_date = dates[i - 1] if i > 0 else None
+        next_date = dates[i + 1] if i < len(dates) - 1 else None
+        card_html = render_card_page(digest, prev_date=prev_date, next_date=next_date)
+        (tmp / f"{digest.date}.html").write_text(card_html, encoding="utf-8")
+
+        # detail pages
+        flat_ids = _flat_ids_for_day(digest)
+        day_dir = tmp / digest.date
+        if flat_ids:
+            day_dir.mkdir(exist_ok=True)
+        for gi, group in enumerate(digest.groups):
+            for ii, item in enumerate(group.items):
+                detail_html = render_detail_page(
+                    digest=digest,
+                    group_index=gi,
+                    item_index=ii,
+                    flat_ids=flat_ids,
+                )
+                (day_dir / f"{item.id}.html").write_text(detail_html, encoding="utf-8")
+
+    # index.html = latest day's card page (or a minimal placeholder page)
+    if digests:
+        latest = digests[-1]
+        (tmp / "index.html").write_text(
+            render_card_page(latest, prev_date=dates[-2] if len(dates) > 1 else None, next_date=None),
+            encoding="utf-8",
+        )
+    else:
+        (tmp / "index.html").write_text(
+            "<!doctype html><meta charset=utf-8><title>마켓 다이제스트</title>"
+            "<p style='font:16px sans-serif;text-align:center;padding:48px'>아직 리포트가 없습니다.</p>",
+            encoding="utf-8",
+        )
+
+    _copy_assets(tmp)
+
+    # atomic swap
+    if old.exists():
+        shutil.rmtree(old)
+    if final.exists():
+        final.rename(old)
+    tmp.rename(final)
+    if old.exists():
+        shutil.rmtree(old)
+
+    return final
