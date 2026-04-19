@@ -214,6 +214,31 @@ def test_enrich_digest_skips_items_without_ticker(tmp_path):
     assert out["groups"][0]["items"][0].get("company_blurb") in (None, "")
 
 
+def test_enrich_digest_skips_sonnet_when_description_missing(tmp_path):
+    blurbs = tmp_path / "blurbs.json"
+    json_path = tmp_path / "2026-04-20.json"
+    json_path.write_text(json.dumps({
+        "date": "2026-04-20",
+        "groups": [{
+            "region": "us", "category": "rating", "title": "미국 애널리스트 변경",
+            "items": [{"id": "us-rating-0", "ticker": "OBSCURE", "name": "Obscure",
+                       "headline": "h", "body_md": "b"}],
+        }],
+    }), encoding="utf-8")
+
+    with patch("market_digest.enrich.fetch_company_description", return_value=None), \
+         patch("market_digest.enrich.generate_blurb") as gb:
+        enrich_digest(
+            json_path=json_path, cache_path=blurbs,
+            api_key="dummy", claude_cli="/bin/claude", model="m",
+            ttl_days=90, today=date(2026, 4, 20),
+        )
+
+    gb.assert_not_called()
+    out = json.loads(json_path.read_text())
+    assert out["groups"][0]["items"][0].get("company_blurb") in (None, "")
+
+
 def test_enrich_digest_tolerates_generate_failure(tmp_path):
     blurbs = tmp_path / "blurbs.json"
     json_path = tmp_path / "2026-04-20.json"

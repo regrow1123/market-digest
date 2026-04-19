@@ -165,6 +165,9 @@ def enrich_digest(
                 mutated = True
                 continue
             description = fetch_company_description(ticker, api_key)
+            if not description:
+                log.info("enrich: no description for %s; skipping blurb", ticker)
+                continue
             blurb = generate_blurb(
                 ticker=ticker,
                 name=item.get("name"),
