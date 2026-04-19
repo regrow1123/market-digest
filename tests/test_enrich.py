@@ -1,8 +1,9 @@
 import json
 from datetime import date, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
-from market_digest.enrich import BlurbCache
+from market_digest.enrich import BlurbCache, fetch_company_description
 
 
 def test_cache_returns_none_when_missing(tmp_path):
@@ -45,3 +46,29 @@ def test_cache_tolerates_corrupt_file(tmp_path):
     cache.set("AAPL", "x", source="t")
     cache.save()
     assert json.loads(path.read_text())["AAPL"]["blurb"] == "x"
+
+
+def test_fetch_company_description_returns_description_field():
+    with patch("market_digest.enrich.requests.get") as m:
+        m.return_value.status_code = 200
+        m.return_value.json.return_value = [{
+            "symbol": "AAPL",
+            "companyName": "Apple Inc.",
+            "description": "Apple Inc. designs, manufactures, and markets smartphones...",
+        }]
+        desc = fetch_company_description("AAPL", "key")
+    assert desc and "Apple Inc." in desc
+
+
+def test_fetch_company_description_returns_none_on_http_error():
+    with patch("market_digest.enrich.requests.get") as m:
+        m.return_value.status_code = 404
+        m.return_value.json.return_value = {}
+        assert fetch_company_description("BADXYZ", "key") is None
+
+
+def test_fetch_company_description_returns_none_on_empty_list():
+    with patch("market_digest.enrich.requests.get") as m:
+        m.return_value.status_code = 200
+        m.return_value.json.return_value = []
+        assert fetch_company_description("AAPL", "key") is None

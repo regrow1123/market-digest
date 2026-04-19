@@ -57,3 +57,30 @@ class BlurbCache:
             json.dumps(self._data, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+
+import requests
+
+_PROFILE_URL = "https://financialmodelingprep.com/api/v3/profile/{ticker}"
+
+
+def fetch_company_description(ticker: str, api_key: str) -> str | None:
+    """Fetch FMP company profile description. None on any failure."""
+    if not api_key:
+        return None
+    try:
+        resp = requests.get(
+            _PROFILE_URL.format(ticker=ticker),
+            params={"apikey": api_key},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        log.warning("enrich: profile request failed for %s: %s", ticker, exc)
+        return None
+    if resp.status_code != 200:
+        return None
+    data = resp.json()
+    if not isinstance(data, list) or not data:
+        return None
+    desc = data[0].get("description")
+    return desc if isinstance(desc, str) and desc.strip() else None
