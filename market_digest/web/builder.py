@@ -1,15 +1,38 @@
 """Static site generator for market-digest."""
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import logging
 from pathlib import Path
 
+from jinja2 import Environment, PackageLoader, select_autoescape
 from pydantic import ValidationError
 
 from market_digest.models import CardIndexEntry, Digest
 
 log = logging.getLogger(__name__)
+
+_env = Environment(
+    loader=PackageLoader("market_digest.web", "templates"),
+    autoescape=select_autoescape(["html", "j2"]),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
+
+_WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"]
+
+
+def _flag(region: str) -> str:
+    return {"kr": "🇰🇷", "us": "🇺🇸"}.get(region, "")
+
+
+_env.globals["group_flag"] = _flag
+
+
+def _weekday(date: str) -> str:
+    y, m, d = (int(x) for x in date.split("-"))
+    return _WEEKDAYS[_dt.date(y, m, d).weekday()]
 
 
 def collect_digests(nas_dir: Path) -> list[Digest]:
@@ -54,3 +77,14 @@ def build_index(digests: list[Digest]) -> list[CardIndexEntry]:
                     )
                 )
     return entries
+
+
+def render_card_page(digest: Digest, *, prev_date: str | None, next_date: str | None) -> str:
+    template = _env.get_template("card_page.html.j2")
+    return template.render(
+        digest=digest,
+        prev_date=prev_date,
+        next_date=next_date,
+        weekday=_weekday(digest.date),
+        asset_prefix="",
+    )
