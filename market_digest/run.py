@@ -51,7 +51,12 @@ def load_config() -> dict:
 
 
 def _validate_digest(json_path: Path, logs_dir: Path, date: str, log: logging.Logger) -> bool:
-    """Return True if JSON parses as a valid Digest. On failure, dump a copy."""
+    """Return True if JSON parses as a valid Digest.
+
+    On failure: dump a copy to logs/ and quarantine the NAS file by
+    renaming it to `{date}.json.invalid` so the next `collect_digests`
+    run does not re-log the same error.
+    """
     try:
         raw = json.loads(json_path.read_text(encoding="utf-8"))
         Digest.model_validate(raw)
@@ -64,6 +69,12 @@ def _validate_digest(json_path: Path, logs_dir: Path, date: str, log: logging.Lo
             log.error("copied invalid digest to %s", dump)
         except OSError:
             pass
+        quarantine = json_path.with_suffix(".json.invalid")
+        try:
+            json_path.rename(quarantine)
+            log.error("quarantined bad digest to %s", quarantine)
+        except OSError as exc:
+            log.error("failed to quarantine %s: %s", json_path, exc)
         return False
 
 
