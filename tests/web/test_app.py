@@ -320,3 +320,45 @@ def test_research_js_served(nas):
         b = c.get("/assets/base.js")
     assert r.status_code == 200 and "fetch(\"/api/research\"" in r.text
     assert b.status_code == 200 and "global-research-badge" in b.text
+
+
+def test_detail_page_includes_tv_chart_when_ticker_present(nas):
+    _write(nas, "2026-04-20", [
+        {"region": "kr", "category": "company", "title": "국내",
+         "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
+                    "headline": "h", "body_md": "-"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-20/kr-company-0")
+    assert resp.status_code == 200
+    assert "tv-chart" in resp.text
+    assert "KRX:" in resp.text or "005930" in resp.text
+    assert "tradingview.com" in resp.text
+
+
+def test_detail_page_no_tv_chart_when_ticker_missing(nas):
+    _write(nas, "2026-04-20", [
+        {"region": "kr", "category": "industry", "title": "국내 시황·산업",
+         "items": [{"id": "kr-industry-0", "headline": "반도체 업황", "body_md": "-"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-20/kr-industry-0")
+    assert resp.status_code == 200
+    assert "tv-chart" not in resp.text
+    assert "tradingview.com" not in resp.text
+
+
+def test_detail_page_us_ticker_uses_bare_symbol(nas):
+    _write(nas, "2026-04-20", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "-"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-20/us-rating-0")
+    assert resp.status_code == 200
+    # inline JS contains ticker literal
+    assert '"AAPL"' in resp.text
