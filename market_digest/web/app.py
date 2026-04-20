@@ -70,6 +70,27 @@ def create_app(nas_dir: Path | None) -> FastAPI:
         y, m, d = (int(x) for x in date.split("-"))
         return _WEEKDAYS[_dt.date(y, m, d).weekday()]
 
+    from fastapi.responses import FileResponse
+    from importlib import resources
+
+    @app.get("/search")
+    async def search_page() -> HTMLResponse:
+        html = app.state.env.get_template("search.html.j2").render(asset_prefix="/")
+        return HTMLResponse(html)
+
+    @app.get("/assets/{name}")
+    async def asset(name: str):
+        if "/" in name or ".." in name:
+            raise HTTPException(status_code=404)
+        try:
+            ref = resources.files("market_digest.web").joinpath("assets", name)
+        except (ModuleNotFoundError, FileNotFoundError):
+            raise HTTPException(status_code=404)
+        path = Path(str(ref))
+        if not path.is_file():
+            raise HTTPException(status_code=404)
+        return FileResponse(path)
+
     @app.get("/{date}")
     async def card_page(date: str = PathParam(..., pattern=_DATE_PATTERN)) -> HTMLResponse:
         if app.state.nas_dir is None:

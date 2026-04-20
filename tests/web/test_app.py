@@ -190,3 +190,28 @@ def test_research_page_404_without_md(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-19/us-rating-0/research")
     assert resp.status_code == 404
+
+
+def test_search_page_renders(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/search")
+    assert resp.status_code == 200
+    assert "cards.json" in resp.text
+    soup = BeautifulSoup(resp.text, "html.parser")
+    assert soup.select_one("input#search-input") is not None
+
+
+def test_static_asset_served(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/assets/style.css")
+    assert resp.status_code == 200
+    assert "page" in resp.text  # stylesheet contains .page rule
+
+
+def test_static_asset_404_for_unknown(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/assets/does-not-exist.js")
+    assert resp.status_code == 404

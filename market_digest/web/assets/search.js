@@ -5,7 +5,7 @@
 
   let cards = [];
   try {
-    cards = await (await fetch("cards.json")).json();
+    cards = await (await fetch("/cards.json")).json();
   } catch (e) {
     count.textContent = "검색 데이터를 불러오지 못했습니다.";
     return;
@@ -15,7 +15,7 @@
     count.textContent = `결과 ${matches.length}`;
     results.innerHTML = matches.map((c) => {
       const flag = c.region === "us" ? "🇺🇸" : "🇰🇷";
-      const href = `${c.date}/${c.id}.html`;
+      const href = `/${c.date}/${c.id}`;
       const tag = c.house ? `<span class="tag">[${c.house}]</span>` : "";
       const nameLine = c.name ? `<span class="name">${c.name}</span>` : "";
       const ticker = c.ticker ? ` (${c.ticker})` : "";

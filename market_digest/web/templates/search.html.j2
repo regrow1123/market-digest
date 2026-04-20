@@ -2,14 +2,14 @@
 {% block title %}검색 · 마켓 다이제스트{% endblock %}
 {% block content %}
 <header class="date-header">
-  <a class="back" href="index.html">← 홈</a>
+  <a class="back" href="/">← 홈</a>
   <span class="date-label">검색</span>
 </header>
 <input id="search-input" type="search" placeholder="종목, 티커, 하우스…" autocomplete="off">
 <p id="search-count" class="subtitle"></p>
 <ul id="search-results" class="cards"></ul>
+<link rel="preload" href="/cards.json" as="fetch" crossorigin="anonymous">
 {% endblock %}
 {% block scripts %}
-<link rel="preload" href="cards.json" as="fetch" crossorigin="anonymous">
-<script src="assets/search.js" defer></script>
+<script src="/assets/search.js" defer></script>
 {% endblock %}
