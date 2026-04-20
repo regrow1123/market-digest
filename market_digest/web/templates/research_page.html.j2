@@ -2,7 +2,7 @@
 {% block title %}🔍 {{ item.name or item.ticker }} 딥 리서치 · {{ digest.date }}{% endblock %}
 {% block content %}
 <header class="date-header">
-  <a class="back" href="{{ item.id }}.html">←&nbsp;상세로 돌아가기</a>
+  <a class="back" href="/{{ digest.date }}/{{ item.id }}">←&nbsp;상세로 돌아가기</a>
 </header>
 <article>
   <div class="body">

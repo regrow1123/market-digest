@@ -122,4 +122,27 @@ def create_app(nas_dir: Path | None) -> FastAPI:
         )
         return HTMLResponse(html)
 
+    @app.get("/{date}/{item_id}/research")
+    async def research_page(
+        date: str = PathParam(..., pattern=_DATE_PATTERN),
+        item_id: str = PathParam(...),
+    ) -> HTMLResponse:
+        if app.state.nas_dir is None:
+            raise HTTPException(status_code=404)
+        digest = load_digest(app.state.nas_dir, date)
+        if digest is None:
+            raise HTTPException(status_code=404)
+        found = find_item(digest, item_id)
+        if found is None:
+            raise HTTPException(status_code=404)
+        _, _, item = found
+        md_path = research_md_path(app.state.nas_dir, item.ticker, date)
+        if md_path is None or not md_path.exists():
+            raise HTTPException(status_code=404)
+        body_html = app.state.md.render(md_path.read_text(encoding="utf-8"))
+        html = app.state.env.get_template("research_page.html.j2").render(
+            digest=digest, item=item, body_html=body_html, asset_prefix="/",
+        )
+        return HTMLResponse(html)
+
     return app

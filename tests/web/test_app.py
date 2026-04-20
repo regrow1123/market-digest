@@ -161,3 +161,32 @@ def test_detail_page_prev_next_within_day(nas):
     assert soup.select_one("a.nav-prev")["href"] == "/2026-04-19/kr-company-0"
     assert soup.select_one("a.nav-next")["href"] == "/2026-04-19/kr-company-2"
     assert soup.select_one("a.back")["href"] == "/2026-04-19"
+
+
+def test_research_page_renders_md(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "b"}]},
+    ])
+    (nas / "research").mkdir()
+    (nas / "research" / "AAPL-2026-04-19.md").write_text(
+        "# 딥 리서치\n\n- alpha research line\n", encoding="utf-8"
+    )
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/us-rating-0/research")
+    assert resp.status_code == 200
+    assert "alpha research line" in resp.text
+
+
+def test_research_page_404_without_md(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "b"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/us-rating-0/research")
+    assert resp.status_code == 404
