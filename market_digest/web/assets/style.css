@@ -143,8 +143,11 @@ button#research-btn:disabled {
 
 .chart {
   margin: 12px 0 20px;
-}
-.chart > div {
   height: 360px;
+  width: 100%;
+}
+.chart .tradingview-widget-container,
+.chart .tradingview-widget-container__widget {
+  height: 100%;
   width: 100%;
 }

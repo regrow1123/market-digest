@@ -332,9 +332,8 @@ def test_detail_page_includes_tv_chart_when_ticker_present(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-company-0")
     assert resp.status_code == 200
-    assert "tv-chart" in resp.text
-    assert "KRX:" in resp.text or "005930" in resp.text
-    assert "tradingview.com" in resp.text
+    assert "embed-widget-advanced-chart.js" in resp.text
+    assert "KRX:005930" in resp.text
 
 
 def test_detail_page_no_tv_chart_when_ticker_missing(nas):
@@ -346,8 +345,8 @@ def test_detail_page_no_tv_chart_when_ticker_missing(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-industry-0")
     assert resp.status_code == 200
-    assert "tv-chart" not in resp.text
-    assert "tradingview.com" not in resp.text
+    assert "embed-widget-advanced-chart.js" not in resp.text
+    assert "tradingview-widget-container" not in resp.text
 
 
 def test_detail_page_us_ticker_uses_bare_symbol(nas):
@@ -360,5 +359,5 @@ def test_detail_page_us_ticker_uses_bare_symbol(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/us-rating-0")
     assert resp.status_code == 200
-    # inline JS contains ticker literal
-    assert '"AAPL"' in resp.text
+    assert "\"symbol\": \"AAPL\"" in resp.text
+    assert "KRX" not in resp.text
