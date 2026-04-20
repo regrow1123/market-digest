@@ -98,3 +98,66 @@ def test_card_page_404_when_date_missing(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-19")
     assert resp.status_code == 404
+
+
+def test_detail_page_renders(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "MS upgrade", "body_md": "- detail",
+                    "company_blurb": "스마트폰·서비스"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/us-rating-0")
+    assert resp.status_code == 200
+    soup = BeautifulSoup(resp.text, "html.parser")
+    assert soup.select_one("article h1")
+    assert "스마트폰" in resp.text
+    # research UI present as BUTTON because md doesn't exist yet
+    assert soup.select_one("button#research-btn") is not None
+    assert soup.select_one("a.research-link") is None
+
+
+def test_detail_page_research_link_when_md_exists(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "b"}]},
+    ])
+    (nas / "research").mkdir()
+    (nas / "research" / "AAPL-2026-04-19.md").write_text("# A\n", encoding="utf-8")
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/us-rating-0")
+    soup = BeautifulSoup(resp.text, "html.parser")
+    link = soup.select_one("a.research-link")
+    assert link is not None
+    assert link["href"] == "/2026-04-19/us-rating-0/research"
+    assert soup.select_one("button#research-btn") is None
+
+
+def test_detail_page_404_when_item_missing(nas):
+    _write(nas, "2026-04-19", [])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/missing")
+    assert resp.status_code == 404
+
+
+def test_detail_page_prev_next_within_day(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "kr", "category": "company", "title": "국내",
+         "items": [
+             {"id": "kr-company-0", "headline": "a", "body_md": "-"},
+             {"id": "kr-company-1", "headline": "b", "body_md": "-"},
+             {"id": "kr-company-2", "headline": "c", "body_md": "-"},
+         ]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/kr-company-1")
+    soup = BeautifulSoup(resp.text, "html.parser")
+    assert soup.select_one("a.nav-prev")["href"] == "/2026-04-19/kr-company-0"
+    assert soup.select_one("a.nav-next")["href"] == "/2026-04-19/kr-company-2"
+    assert soup.select_one("a.back")["href"] == "/2026-04-19"

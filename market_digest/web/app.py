@@ -88,4 +88,38 @@ def create_app(nas_dir: Path | None) -> FastAPI:
         )
         return HTMLResponse(html)
 
+    from market_digest.web.data import find_item, flat_ids, research_md_path
+
+    @app.get("/{date}/{item_id}")
+    async def detail_page(
+        date: str = PathParam(..., pattern=_DATE_PATTERN),
+        item_id: str = PathParam(...),
+    ) -> HTMLResponse:
+        if app.state.nas_dir is None:
+            raise HTTPException(status_code=404)
+        digest = load_digest(app.state.nas_dir, date)
+        if digest is None:
+            raise HTTPException(status_code=404)
+        found = find_item(digest, item_id)
+        if found is None:
+            raise HTTPException(status_code=404)
+        gi, ii, item = found
+        ids = flat_ids(digest)
+        pos = ids.index(item_id)
+        prev_id = ids[pos - 1] if pos > 0 else None
+        next_id = ids[pos + 1] if pos < len(ids) - 1 else None
+        md_path = research_md_path(app.state.nas_dir, item.ticker, date)
+        has_research = md_path is not None and md_path.exists()
+        body_html = app.state.md.render(item.body_md)
+        html = app.state.env.get_template("detail_page.html.j2").render(
+            digest=digest,
+            item=item,
+            prev_id=prev_id,
+            next_id=next_id,
+            body_html=body_html,
+            has_research=has_research,
+            asset_prefix="/",
+        )
+        return HTMLResponse(html)
+
     return app
