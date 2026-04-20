@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -322,7 +323,7 @@ def test_research_js_served(nas):
     assert b.status_code == 200 and "global-research-badge" in b.text
 
 
-def test_detail_page_kr_uses_naver_chart(nas):
+def test_detail_page_kr_uses_lightweight_chart(nas):
     _write(nas, "2026-04-20", [
         {"region": "kr", "category": "company", "title": "국내",
          "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
@@ -332,8 +333,11 @@ def test_detail_page_kr_uses_naver_chart(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-company-0")
     assert resp.status_code == 200
-    assert "ssl.pstatic.net/imgfinance/chart/item/area/year/005930.png" in resp.text
-    assert "finance.naver.com/item/main.naver?code=005930" in resp.text
+    assert 'id="kr-chart"' in resp.text
+    assert 'data-ticker="005930"' in resp.text
+    assert "lightweight-charts" in resp.text
+    assert "/assets/chart.js" in resp.text
+    # US embed must NOT appear
     assert "embed-widget-advanced-chart.js" not in resp.text
 
 
@@ -346,7 +350,7 @@ def test_detail_page_no_chart_when_ticker_missing(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-industry-0")
     assert resp.status_code == 200
-    assert "ssl.pstatic.net" not in resp.text
+    assert 'id="kr-chart"' not in resp.text
     assert "embed-widget-advanced-chart.js" not in resp.text
 
 
@@ -362,4 +366,29 @@ def test_detail_page_us_uses_tv_widget(nas):
     assert resp.status_code == 200
     assert "embed-widget-advanced-chart.js" in resp.text
     assert "\"symbol\": \"AAPL\"" in resp.text
-    assert "ssl.pstatic.net" not in resp.text
+    assert 'id="kr-chart"' not in resp.text
+
+
+def test_api_chart_route_returns_json_bars(nas):
+    app = create_app(nas_dir=nas)
+    with patch("market_digest.web.charts.requests.get") as m:
+        m.return_value.status_code = 200
+        m.return_value.content = (
+            b'<protocol><chartdata>'
+            b'<item data="20251024|97900|99000|97700|98800|18801925" />'
+            b'</chartdata></protocol>'
+        )
+        with TestClient(app) as c:
+            resp = c.get("/api/chart/005930")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["time"] == "2025-10-24"
+    assert body[0]["close"] == 98800
+
+
+def test_api_chart_rejects_non_kr_ticker(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/api/chart/AAPL")
+    assert resp.status_code == 400

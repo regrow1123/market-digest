@@ -202,6 +202,15 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             for j in app.state.tracker.active()
         ]
 
+    from market_digest.web.charts import fetch_kr_ohlc as _fetch_kr_ohlc
+
+    @app.get("/api/chart/{ticker}")
+    async def chart_ohlc(ticker: str) -> list:
+        t = ticker.strip()
+        if not (len(t) == 6 and t.isdigit()):
+            raise HTTPException(status_code=400, detail="ticker must be 6-digit KR code")
+        return _fetch_kr_ohlc(t, count=120)
+
     @app.get("/{date}")
     async def card_page(date: str = PathParam(..., pattern=_DATE_PATTERN)) -> HTMLResponse:
         if app.state.nas_dir is None:
@@ -247,8 +256,8 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             t = item.ticker.strip()
             if len(t) == 6 and t.isdigit():
                 chart_meta = {
-                    "kind": "naver",
-                    "img_url": f"https://ssl.pstatic.net/imgfinance/chart/item/area/year/{t}.png",
+                    "kind": "kr",
+                    "ticker": t,
                     "link_url": f"https://finance.naver.com/item/main.naver?code={t}",
                 }
             else:

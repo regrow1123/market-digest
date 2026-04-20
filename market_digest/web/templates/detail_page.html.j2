@@ -17,12 +17,12 @@
   <p class="meta">{% if item.opinion %}{{ item.opinion }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</p>
   {% endif %}
   {% if chart_meta %}
-    {% if chart_meta.kind == "naver" %}
-    <div class="chart chart-naver">
-      <a href="{{ chart_meta.link_url }}" rel="noopener" target="_blank">
-        <img src="{{ chart_meta.img_url }}" alt="{{ item.name or item.ticker }} 1년 차트" loading="lazy">
-      </a>
-      <p class="chart-caption subtitle">네이버 금융에서 보기 →</p>
+    {% if chart_meta.kind == "kr" %}
+    <div class="chart chart-kr">
+      <div id="kr-chart" data-ticker="{{ chart_meta.ticker }}"></div>
+      <p class="chart-caption subtitle">
+        <a href="{{ chart_meta.link_url }}" rel="noopener" target="_blank">네이버 금융에서 자세히 보기 →</a>
+      </p>
     </div>
     {% elif chart_meta.kind == "tv" %}
     <div class="chart">
@@ -70,4 +70,8 @@
 {% endblock %}
 {% block scripts %}
 <script src="/assets/research.js" defer></script>
+{% if chart_meta and chart_meta.kind == "kr" %}
+<script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js" defer></script>
+<script src="/assets/chart.js" defer></script>
+{% endif %}
 {% endblock %}

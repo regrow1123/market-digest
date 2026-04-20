@@ -145,25 +145,25 @@ button#research-btn:disabled {
   margin: 12px 0 20px;
   width: 100%;
 }
-.chart.chart-naver {
+.chart.chart-kr {
   height: auto;
 }
-.chart.chart-naver img {
+.chart.chart-kr #kr-chart {
+  height: 360px;
   width: 100%;
-  height: auto;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  display: block;
 }
-.chart.chart-naver .chart-caption {
+.chart.chart-kr .chart-caption {
   margin-top: 6px;
   text-align: right;
 }
-.chart:not(.chart-naver) {
+.chart:not(.chart-kr) {
   height: 360px;
 }
-.chart:not(.chart-naver) .tradingview-widget-container,
-.chart:not(.chart-naver) .tradingview-widget-container__widget {
+.chart:not(.chart-kr) .tradingview-widget-container,
+.chart:not(.chart-kr) .tradingview-widget-container__widget {
   height: 100%;
   width: 100%;
 }
