@@ -277,3 +277,37 @@ def test_post_research_400_if_ticker_not_in_digest(nas):
     with TestClient(app) as c:
         resp = c.post("/api/research", json={"ticker": "XYZ", "date": "2026-04-19"})
     assert resp.status_code == 400
+
+
+def test_get_research_status_returns_state(nas):
+    app = create_app(nas_dir=nas)
+    tracker = app.state.tracker
+    j = tracker.create("AAPL", "2026-04-19")
+    tracker.mark_running(j.job_id)
+    with TestClient(app) as c:
+        resp = c.get(f"/api/research/status/{j.job_id}")
+    body = resp.json()
+    assert body["status"] == "running"
+    assert body["ticker"] == "AAPL"
+    assert body["date"] == "2026-04-19"
+
+
+def test_get_research_status_404_for_unknown(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/api/research/status/does-not-exist")
+    assert resp.status_code == 404
+
+
+def test_get_research_active_lists_only_pending_running(nas):
+    app = create_app(nas_dir=nas)
+    tracker = app.state.tracker
+    j1 = tracker.create("AAPL", "2026-04-19")
+    j2 = tracker.create("MSFT", "2026-04-19")
+    tracker.mark_done(j2.job_id, "/x")
+    with TestClient(app) as c:
+        resp = c.get("/api/research/active")
+    body = resp.json()
+    ids = {j["job_id"] for j in body}
+    assert j1.job_id in ids
+    assert j2.job_id not in ids

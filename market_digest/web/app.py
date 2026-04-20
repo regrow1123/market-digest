@@ -180,6 +180,28 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         )
         return {"job_id": job.job_id, "status": "pending"}
 
+    @app.get("/api/research/status/{job_id}")
+    async def research_status(job_id: str) -> dict:
+        job = app.state.tracker.get(job_id)
+        if job is None:
+            raise HTTPException(status_code=404)
+        return {
+            "job_id": job.job_id,
+            "ticker": job.ticker,
+            "date": job.date,
+            "status": job.status,
+            "output_url": job.output_url,
+            "error": job.error,
+        }
+
+    @app.get("/api/research/active")
+    async def research_active() -> list:
+        return [
+            {"job_id": j.job_id, "ticker": j.ticker, "date": j.date,
+             "status": j.status}
+            for j in app.state.tracker.active()
+        ]
+
     @app.get("/{date}")
     async def card_page(date: str = PathParam(..., pattern=_DATE_PATTERN)) -> HTMLResponse:
         if app.state.nas_dir is None:
