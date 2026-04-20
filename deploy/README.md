@@ -1,48 +1,44 @@
-# Deploying the web digest
+# Deploying the web digest (dynamic)
 
-## 1. Caddy
-
-```bash
-sudo apt install caddy
-sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile.market-digest
-# Then either append the block to /etc/caddy/Caddyfile or import it.
-sudo systemctl enable --now caddy
-curl -I http://localhost:8086    # should return 200 or 404 if site/ isn't built yet
-```
-
-## 2. Cloudflare Tunnel
-
-The existing `sund4y-tunnel` is managed from the Cloudflare dashboard
-(not a local `config.yml`). Add an ingress rule there:
-
-- Hostname: `market-digest.<your-domain>`
-- Service: `http://localhost:8086`
-
-Verify `cloudflared` is running:
+## 1. FastAPI app (systemd)
 
 ```bash
-systemctl --user status cloudflared  # or: ps -fp $(pgrep cloudflared)
+sudo cp deploy/market-digest-web.service.example /etc/systemd/system/market-digest-web.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now market-digest-web
+curl -s http://127.0.0.1:8087/healthz   # -> {"ok":true}
 ```
 
-## 3. First build
-
-Static files are produced by `market_digest.run`. Trigger a build with
-today's data, or rebuild from existing JSON only:
+## 2. Caddy (reverse proxy)
 
 ```bash
-uv run python -c "from pathlib import Path; from market_digest.web import build; print(build(Path('/mnt/nas/market-digest')))"
+# append the block from deploy/Caddyfile.example to /etc/caddy/Caddyfile
+sudo systemctl reload caddy
+curl -I http://localhost:8086/healthz    # -> 200 via Caddy
 ```
 
-## 4. Daily run
+## 3. Cloudflare Tunnel + Access
 
-The existing cron / scheduler that invokes `python -m market_digest.run`
-now also rebuilds the site as its last step.
+Ingress already routes the hostname to `http://localhost:8086`. Cloudflare
+Access policy (email allowlist) is configured in the Cloudflare dashboard.
 
-## 5. FMP API key
+## 4. FMP API key
 
 1. Register free account at https://site.financialmodelingprep.com/developer/docs
 2. Copy API key into `.env`:
    ```
    FMP_API_KEY=your_key_here
    ```
-3. Free tier: 250 calls/day. Daily run uses ~10-30 calls (feed + profiles).
+3. Free tier: 250 calls/day.
+
+## 5. Daily run
+
+The existing cron that invokes `python -m market_digest.run` now writes JSON + blurbs only. The web app reads from NAS on every request; no build step required.
+
+## 6. Deep research from the web
+
+On any detail page for a ticker that has no research yet:
+1. Click "🔍 딥 리서치 시작".
+2. Status line updates as the background job progresses.
+3. On completion, browser auto-navigates to the research page.
+4. You can leave the page — the job keeps running; come back or watch the global badge (top-right) for progress.

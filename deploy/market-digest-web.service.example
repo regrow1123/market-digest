@@ -1,0 +1,15 @@
+[Unit]
+Description=market-digest web app
+After=network.target
+
+[Service]
+Type=simple
+User=sund4y
+WorkingDirectory=/home/sund4y/market-digest
+ExecStart=/home/sund4y/.local/bin/uv run uvicorn market_digest.web.app:production_app --factory --host 127.0.0.1 --port 8087
+Restart=on-failure
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=/home/sund4y/market-digest/.env
+
+[Install]
+WantedBy=multi-user.target

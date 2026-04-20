@@ -278,3 +278,13 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         return HTMLResponse(html)
 
     return app
+
+
+def production_app() -> FastAPI:
+    """uvicorn entry point: binds nas_dir from config.yaml."""
+    import yaml
+
+    cfg_path = Path(__file__).resolve().parent.parent.parent / "config.yaml"
+    with open(cfg_path, encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    return create_app(nas_dir=Path(cfg["nas_report_dir"]))

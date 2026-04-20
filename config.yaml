@@ -39,3 +39,7 @@ claude:
   blurb_model: "claude-sonnet-4-6"
   research_model: "claude-opus-4-7"
   blurb_cache_ttl_days: 90
+
+web:
+  host: "127.0.0.1"
+  port: 8087
