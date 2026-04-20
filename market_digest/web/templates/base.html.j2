@@ -7,9 +7,11 @@
 <link rel="stylesheet" href="{{ asset_prefix }}assets/style.css">
 </head>
 <body>
+<span id="global-research-badge" class="nav-badge" style="display:none"></span>
 <main class="page">
 {% block content %}{% endblock %}
 </main>
+<script src="/assets/base.js" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

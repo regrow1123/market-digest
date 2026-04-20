@@ -311,3 +311,12 @@ def test_get_research_active_lists_only_pending_running(nas):
     ids = {j["job_id"] for j in body}
     assert j1.job_id in ids
     assert j2.job_id not in ids
+
+
+def test_research_js_served(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        r = c.get("/assets/research.js")
+        b = c.get("/assets/base.js")
+    assert r.status_code == 200 and "fetch(\"/api/research\"" in r.text
+    assert b.status_code == 200 and "global-research-badge" in b.text
