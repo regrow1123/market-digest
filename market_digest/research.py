@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import subprocess
 import sys
 import zoneinfo
@@ -32,7 +33,25 @@ def build_output_path(*, root: Path, ticker: str, date_str: str) -> Path:
     return root / "research" / f"{ticker.upper()}-{date_str}.md"
 
 
-def _prompt(ticker: str, date_str: str, out_path: Path, context: str | None) -> str:
+_KR_TICKER_RE = re.compile(r"^\d{6}$")
+
+
+def _kr_prompt(ticker: str, date_str: str, out_path: Path, context: str | None) -> str:
+    extra = f"\n사용자 포커스: {context}" if context else ""
+    return (
+        f"{ticker} 한국 종목에 대한 딥 리서치 리포트를 한국어로 작성하라. "
+        f"날짜 기준은 {date_str} (KST). 공개 자료만 사용: "
+        f"네이버 금융 종목분석, 한경 컨센서스, DART 전자공시, 다음 금융, "
+        f"이데일리·머니투데이·아시아경제 기사, 증권사 분석 요약. "
+        f"다음 섹션으로 구성: "
+        f"## 회사 개요, ## 주요 증권사 의견 (증권사명+목표가+요지+출처), "
+        f"## Thesis, ## 리스크, ## 최근 이벤트, ## 출처. "
+        f"WebSearch/WebFetch 로 수집하고, 출처 URL 을 각 인용마다 붙여라.{extra} "
+        f"완성된 Markdown 을 Write 도구로 {out_path} 에 저장하라."
+    )
+
+
+def _us_prompt(ticker: str, date_str: str, out_path: Path, context: str | None) -> str:
     extra = f"\n사용자 포커스: {context}" if context else ""
     return (
         f"{ticker} 종목에 대한 딥 리서치 리포트를 한국어로 작성하라. "
@@ -45,6 +64,13 @@ def _prompt(ticker: str, date_str: str, out_path: Path, context: str | None) -> 
         f"WebSearch/WebFetch 로 수집하고, 출처 URL 을 각 인용마다 붙여라.{extra} "
         f"완성된 Markdown 을 Write 도구로 {out_path} 에 저장하라."
     )
+
+
+def build_prompt(ticker: str, date_str: str, out_path: Path, context: str | None) -> str:
+    """Return the research prompt; branches KR vs US by ticker shape."""
+    if _KR_TICKER_RE.match(ticker):
+        return _kr_prompt(ticker, date_str, out_path, context)
+    return _us_prompt(ticker, date_str, out_path, context)
 
 
 def run_research(
@@ -69,7 +95,7 @@ def run_research(
 
     cmd = [
         claude_cli,
-        "-p", _prompt(ticker, date_str, out_path, context),
+        "-p", build_prompt(ticker, date_str, out_path, context),
         "--model", model,
         "--allowed-tools", "WebSearch,WebFetch,Read,Write",
         "--permission-mode", "dontAsk",

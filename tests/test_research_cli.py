@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from market_digest.research import build_output_path, main, run_research
+from market_digest.research import build_output_path, build_prompt, main, run_research
 
 
 def test_build_output_path(tmp_path):
@@ -79,3 +79,20 @@ def test_main_exit_zero_on_success(tmp_path, monkeypatch):
         ])
     assert rc == 0
     rr.assert_called_once()
+
+
+def test_build_prompt_picks_kr_sources_for_6_digit_ticker(tmp_path):
+    p = build_prompt("005930", "2026-04-19", tmp_path / "out.md", None)
+    assert "네이버" in p or "한경" in p or "DART" in p
+    assert "Seeking Alpha" not in p
+
+
+def test_build_prompt_picks_us_sources_for_letter_ticker(tmp_path):
+    p = build_prompt("AAPL", "2026-04-19", tmp_path / "out.md", None)
+    assert "Yahoo Finance" in p or "Seeking Alpha" in p
+    assert "네이버" not in p
+
+
+def test_build_prompt_includes_context_when_present(tmp_path):
+    p = build_prompt("AAPL", "2026-04-19", tmp_path / "out.md", "AI 리스크 중점")
+    assert "AI 리스크 중점" in p
