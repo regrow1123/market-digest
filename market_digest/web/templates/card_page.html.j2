@@ -2,10 +2,10 @@
 {% block title %}{{ digest.date }} · 마켓 다이제스트{% endblock %}
 {% block content %}
 <header class="date-header">
-  {% if prev_date %}<a class="nav-prev" href="{{ prev_date }}.html">◀</a>{% else %}<span class="nav-prev disabled">◀</span>{% endif %}
+  {% if prev_date %}<a class="nav-prev" href="/{{ prev_date }}">◀</a>{% else %}<span class="nav-prev disabled">◀</span>{% endif %}
   <span class="date-label">{{ digest.date }} ({{ weekday }})</span>
-  {% if next_date %}<a class="nav-next" href="{{ next_date }}.html">▶</a>{% else %}<span class="nav-next disabled">▶</span>{% endif %}
-  <a class="nav-search" href="search.html">🔍</a>
+  {% if next_date %}<a class="nav-next" href="/{{ next_date }}">▶</a>{% else %}<span class="nav-next disabled">▶</span>{% endif %}
+  <a class="nav-search" href="/search">🔍</a>
 </header>
 
 {% if not digest.groups %}
@@ -17,7 +17,7 @@
     <ul class="cards">
       {% for item in group.items %}
       <li>
-        <a class="card" href="{{ digest.date }}/{{ item.id }}.html">
+        <a class="card" href="/{{ digest.date }}/{{ item.id }}">
           {% if item.house %}<span class="tag">[{{ item.house }}]</span>{% endif %}
           {% if item.name %}<span class="name">{{ item.name }}</span>{% if item.ticker %} ({{ item.ticker }}){% endif %}{% endif %}
           <span class="dash">—</span>

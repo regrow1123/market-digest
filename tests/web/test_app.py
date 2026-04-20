@@ -60,3 +60,41 @@ def test_cards_json_is_date_desc(nas):
     assert resp.status_code == 200
     data = resp.json()
     assert [e["date"] for e in data] == ["2026-04-19", "2026-04-18"]
+
+
+from bs4 import BeautifulSoup
+
+
+def test_card_page_renders_groups_and_cards(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "kr", "category": "company", "title": "국내 기업리포트",
+         "items": [{"id": "kr-company-0", "headline": "HBM 회복", "body_md": "-",
+                    "house": "MS", "name": "삼성전자", "ticker": "005930"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19")
+    assert resp.status_code == 200
+    soup = BeautifulSoup(resp.text, "html.parser")
+    link = soup.select_one("a.card")
+    assert link["href"] == "/2026-04-19/kr-company-0"
+    assert "삼성전자" in link.text
+
+
+def test_card_page_prev_next_clean_urls(nas):
+    _write(nas, "2026-04-17", [])
+    _write(nas, "2026-04-18", [])
+    _write(nas, "2026-04-19", [])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-18")
+    soup = BeautifulSoup(resp.text, "html.parser")
+    assert soup.select_one("a.nav-prev")["href"] == "/2026-04-17"
+    assert soup.select_one("a.nav-next")["href"] == "/2026-04-19"
+
+
+def test_card_page_404_when_date_missing(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19")
+    assert resp.status_code == 404
