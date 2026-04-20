@@ -202,15 +202,6 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             for j in app.state.tracker.active()
         ]
 
-    from market_digest.web.charts import fetch_kr_ohlc as _fetch_kr_ohlc
-
-    @app.get("/api/chart/{ticker}")
-    async def chart_ohlc(ticker: str) -> list:
-        t = ticker.strip()
-        if not (len(t) == 6 and t.isdigit()):
-            raise HTTPException(status_code=400, detail="ticker must be 6-digit KR code")
-        return _fetch_kr_ohlc(t, count=120)
-
     @app.get("/{date}")
     async def card_page(date: str = PathParam(..., pattern=_DATE_PATTERN)) -> HTMLResponse:
         if app.state.nas_dir is None:
@@ -251,17 +242,19 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         next_id = ids[pos + 1] if pos < len(ids) - 1 else None
         md_path = research_md_path(app.state.nas_dir, item.ticker, date)
         has_research = md_path is not None and md_path.exists()
-        chart_meta: dict | None = None
+        chart_link: dict | None = None
         if item.ticker:
             t = item.ticker.strip()
             if len(t) == 6 and t.isdigit():
-                chart_meta = {
-                    "kind": "kr",
-                    "ticker": t,
-                    "link_url": f"https://finance.naver.com/item/main.naver?code={t}",
+                chart_link = {
+                    "url": f"https://finance.naver.com/item/main.naver?code={t}",
+                    "label": "📈 네이버 금융에서 차트 보기",
                 }
             else:
-                chart_meta = {"kind": "tv", "symbol": t}
+                chart_link = {
+                    "url": f"https://www.tradingview.com/symbols/{t}/",
+                    "label": "📈 TradingView 에서 차트 보기",
+                }
         body_html = app.state.md.render(item.body_md)
         html = app.state.env.get_template("detail_page.html.j2").render(
             digest=digest,
@@ -270,7 +263,7 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             next_id=next_id,
             body_html=body_html,
             has_research=has_research,
-            chart_meta=chart_meta,
+            chart_link=chart_link,
             asset_prefix="/",
         )
         return HTMLResponse(html)

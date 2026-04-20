@@ -141,29 +141,19 @@ button#research-btn:disabled {
   cursor: wait;
 }
 
-.chart {
+.chart-link {
   margin: 12px 0 20px;
-  width: 100%;
 }
-.chart.chart-kr {
-  height: auto;
-}
-.chart.chart-kr #kr-chart {
-  height: 360px;
-  width: 100%;
+.chart-link a {
+  display: inline-block;
+  padding: 8px 14px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 14px;
 }
-.chart.chart-kr .chart-caption {
-  margin-top: 6px;
-  text-align: right;
-}
-.chart:not(.chart-kr) {
-  height: 360px;
-}
-.chart:not(.chart-kr) .tradingview-widget-container,
-.chart:not(.chart-kr) .tradingview-widget-container__widget {
-  height: 100%;
-  width: 100%;
+.chart-link a:hover {
+  background: var(--border);
 }

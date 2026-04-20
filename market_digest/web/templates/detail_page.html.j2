@@ -16,39 +16,10 @@
   {% if item.opinion or item.target %}
   <p class="meta">{% if item.opinion %}{{ item.opinion }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</p>
   {% endif %}
-  {% if chart_meta %}
-    {% if chart_meta.kind == "kr" %}
-    <div class="chart chart-kr">
-      <div id="kr-chart" data-ticker="{{ chart_meta.ticker }}"></div>
-      <p class="chart-caption subtitle">
-        <a href="{{ chart_meta.link_url }}" rel="noopener" target="_blank">네이버 금융에서 자세히 보기 →</a>
-      </p>
-    </div>
-    {% elif chart_meta.kind == "tv" %}
-    <div class="chart">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "{{ chart_meta.symbol }}",
-          "interval": "D",
-          "timezone": "Asia/Seoul",
-          "theme": "light",
-          "style": "2",
-          "locale": "kr",
-          "toolbar_bg": "transparent",
-          "hide_top_toolbar": true,
-          "hide_side_toolbar": true,
-          "hide_legend": false,
-          "allow_symbol_change": false,
-          "save_image": false,
-          "withdateranges": false
-        }
-        </script>
-      </div>
-    </div>
-    {% endif %}
+  {% if chart_link %}
+  <p class="chart-link">
+    <a href="{{ chart_link.url }}" rel="noopener" target="_blank">{{ chart_link.label }}</a>
+  </p>
   {% endif %}
   {% if body_html %}
   <div class="body">
@@ -70,8 +41,4 @@
 {% endblock %}
 {% block scripts %}
 <script src="/assets/research.js" defer></script>
-{% if chart_meta and chart_meta.kind == "kr" %}
-<script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js" defer></script>
-<script src="/assets/chart.js" defer></script>
-{% endif %}
 {% endblock %}
