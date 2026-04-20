@@ -60,13 +60,15 @@ def test_digest_parses_full_payload():
     assert item.url == "https://example.com/x"
 
 
-def test_item_requires_id_headline_body_md():
+def test_item_requires_only_id_and_headline():
+    # id + headline are required
     with pytest.raises(ValidationError):
-        Item.model_validate({"headline": "x", "body_md": "y"})  # missing id
+        Item.model_validate({"headline": "x"})  # missing id
     with pytest.raises(ValidationError):
-        Item.model_validate({"id": "a", "body_md": "y"})  # missing headline
-    with pytest.raises(ValidationError):
-        Item.model_validate({"id": "a", "headline": "x"})  # missing body_md
+        Item.model_validate({"id": "a"})  # missing headline
+    # body_md is optional, defaults to empty string
+    item = Item.model_validate({"id": "a", "headline": "x"})
+    assert item.body_md == ""
 
 
 def test_group_region_must_be_kr_or_us():

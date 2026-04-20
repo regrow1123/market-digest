@@ -50,9 +50,11 @@
     </div>
     {% endif %}
   {% endif %}
+  {% if body_html %}
   <div class="body">
     {{ body_html|safe }}
   </div>
+  {% endif %}
   {% if item.url %}<p class="source"><a href="{{ item.url }}" rel="noopener">원문 링크</a></p>{% endif %}
 
   <p class="source">

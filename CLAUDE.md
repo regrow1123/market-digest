@@ -47,7 +47,7 @@
 - `title`: 사람에게 보여질 그룹 제목 (예: `"국내 기업리포트"`, `"국내 시황·산업"`, `"미국 8-K 주요 공시"`, `"미국 애널리스트 변경"`)
 - `items[].id`: `{region}-{category}-{index}` 형식, index 는 그룹 내 0 부터. 예: `"kr-company-0"`, `"us-8k-3"`
 - `items[].headline`: **1줄 카드용**. 핵심 요지를 한 줄로. 투자의견/목표가 문구는 `opinion`/`target` 에 넣지 말고 headline 에서는 제외
-- `items[].body_md`: **상세용 Markdown**. 3~5줄의 핵심 요약, 필요한 메타 포함
+- `items[].body_md`: **상세용 Markdown**. 3~5줄의 핵심 요약. 내용이 1줄짜리 이벤트면 비우거나 짧아도 됨.
 - `items[].opinion`: 투자의견 (`Buy`, `Hold`, ...) — 없으면 생략
 - `items[].target`: 목표가. 변경 시 `"85,000 → 95,000"` 형식 — 없으면 생략
 - `items[].url`: 원문 URL — 없으면 생략

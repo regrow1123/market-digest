@@ -15,7 +15,7 @@ _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 class Item(BaseModel):
     id: str
     headline: str
-    body_md: str
+    body_md: str = ""
     house: str | None = None
     ticker: str | None = None
     name: str | None = None
