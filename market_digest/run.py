@@ -1,12 +1,12 @@
 """market-digest orchestrator.
 
 Runs fetchers, calls `claude -p` for summarization, validates the produced
-digest JSON, and rebuilds the static site.
+digest JSON, and enriches it with blurbs.
 
 Usage:
     python -m market_digest.run                # today (KST)
     python -m market_digest.run --date 2026-04-17
-    python -m market_digest.run --dry-run      # write JSON + site to ./out/
+    python -m market_digest.run --dry-run      # write JSON to ./out/
 """
 from __future__ import annotations
 
@@ -26,7 +26,6 @@ from pydantic import ValidationError
 from market_digest.fetchers import fmp, hankyung, sec_edgar
 from market_digest.models import Digest
 from market_digest.summarize import summarize
-from market_digest.web import build as web_build
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 KST = zoneinfo.ZoneInfo("Asia/Seoul")
@@ -168,13 +167,6 @@ def run(date: str, dry_run: bool) -> int:
             log.exception("enrich failed (continuing): %s", exc)
     else:
         log.warning("digest invalid — skipping enrich; build will rebuild from prior JSONs")
-
-    try:
-        site = web_build(nas_dir)
-        log.info("web.build: site=%s", site)
-    except Exception as exc:
-        log.exception("web.build failed: %s", exc)
-        return 1
 
     return 0
 

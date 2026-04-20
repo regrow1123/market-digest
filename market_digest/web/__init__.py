@@ -1,4 +1,4 @@
-"""market_digest.web — static site generator package."""
-from market_digest.web.builder import build
+"""market_digest.web — FastAPI application package."""
+from market_digest.web.app import create_app
 
-__all__ = ["build"]
+__all__ = ["create_app"]
