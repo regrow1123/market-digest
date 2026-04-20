@@ -157,3 +157,14 @@ button#research-btn:disabled {
 .chart-link a:hover {
   background: var(--border);
 }
+
+.chart {
+  margin: 12px 0 20px;
+  width: 100%;
+  height: 360px;
+}
+.chart .tradingview-widget-container,
+.chart .tradingview-widget-container__widget {
+  height: 100%;
+  width: 100%;
+}

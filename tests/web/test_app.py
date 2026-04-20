@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -337,7 +336,7 @@ def test_detail_page_kr_uses_naver_link(nas):
     assert "네이버 금융" in resp.text
 
 
-def test_detail_page_no_chart_link_when_ticker_missing(nas):
+def test_detail_page_no_chart_when_ticker_missing(nas):
     _write(nas, "2026-04-20", [
         {"region": "kr", "category": "industry", "title": "국내 시황·산업",
          "items": [{"id": "kr-industry-0", "headline": "반도체 업황", "body_md": "-"}]},
@@ -346,21 +345,20 @@ def test_detail_page_no_chart_link_when_ticker_missing(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-industry-0")
     assert resp.status_code == 200
-    assert "naver.com" not in resp.text
+    assert "finance.naver.com" not in resp.text
+    assert "embed-widget-advanced-chart.js" not in resp.text
 
 
-def test_detail_page_us_uses_naver_worldstock_link(nas):
+def test_detail_page_us_uses_tv_widget(nas):
     _write(nas, "2026-04-20", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
                     "headline": "h", "body_md": "-"}]},
     ])
     app = create_app(nas_dir=nas)
-    fake = "https://m.stock.naver.com/worldstock/stock/AAPL.O/total"
-    with patch("market_digest.web.naver.resolve_overseas_url", return_value=fake):
-        with TestClient(app) as c:
-            resp = c.get("/2026-04-20/us-rating-0")
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-20/us-rating-0")
     assert resp.status_code == 200
-    assert fake in resp.text
-    assert "해외주식" in resp.text
-    assert "embed-widget-advanced-chart.js" not in resp.text
+    assert "embed-widget-advanced-chart.js" in resp.text
+    assert "\"symbol\": \"AAPL\"" in resp.text
+    assert "finance.naver.com" not in resp.text

@@ -243,6 +243,7 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         md_path = research_md_path(app.state.nas_dir, item.ticker, date)
         has_research = md_path is not None and md_path.exists()
         chart_link: dict | None = None
+        chart_tv: dict | None = None
         if item.ticker:
             t = item.ticker.strip()
             if len(t) == 6 and t.isdigit():
@@ -251,11 +252,7 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
                     "label": "📈 네이버 금융에서 차트 보기",
                 }
             else:
-                from market_digest.web.naver import resolve_overseas_url
-                chart_link = {
-                    "url": resolve_overseas_url(t),
-                    "label": "📈 네이버 해외주식에서 차트 보기",
-                }
+                chart_tv = {"symbol": t}
         body_html = app.state.md.render(item.body_md)
         html = app.state.env.get_template("detail_page.html.j2").render(
             digest=digest,
@@ -265,6 +262,7 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             body_html=body_html,
             has_research=has_research,
             chart_link=chart_link,
+            chart_tv=chart_tv,
             asset_prefix="/",
         )
         return HTMLResponse(html)
