@@ -251,8 +251,9 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
                     "label": "📈 네이버 금융에서 차트 보기",
                 }
             else:
+                from market_digest.web.naver import resolve_overseas_url
                 chart_link = {
-                    "url": f"https://m.stock.naver.com/worldstock/stock/{t}/total",
+                    "url": resolve_overseas_url(t),
                     "label": "📈 네이버 해외주식에서 차트 보기",
                 }
         body_html = app.state.md.render(item.body_md)
