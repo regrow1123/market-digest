@@ -345,11 +345,10 @@ def test_detail_page_no_chart_link_when_ticker_missing(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-industry-0")
     assert resp.status_code == 200
-    assert "finance.naver.com" not in resp.text
-    assert "tradingview.com/symbols" not in resp.text
+    assert "naver.com" not in resp.text
 
 
-def test_detail_page_us_uses_tradingview_link(nas):
+def test_detail_page_us_uses_naver_worldstock_link(nas):
     _write(nas, "2026-04-20", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
@@ -359,7 +358,7 @@ def test_detail_page_us_uses_tradingview_link(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/us-rating-0")
     assert resp.status_code == 200
-    assert "tradingview.com/symbols/AAPL/" in resp.text
-    assert "TradingView" in resp.text
+    assert "m.stock.naver.com/worldstock/stock/AAPL/total" in resp.text
+    assert "해외주식" in resp.text
     # no embed
     assert "embed-widget-advanced-chart.js" not in resp.text

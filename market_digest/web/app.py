@@ -252,8 +252,8 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
                 }
             else:
                 chart_link = {
-                    "url": f"https://www.tradingview.com/symbols/{t}/",
-                    "label": "📈 TradingView 에서 차트 보기",
+                    "url": f"https://m.stock.naver.com/worldstock/stock/{t}/total",
+                    "label": "📈 네이버 해외주식에서 차트 보기",
                 }
         body_html = app.state.md.render(item.body_md)
         html = app.state.env.get_template("detail_page.html.j2").render(
