@@ -242,10 +242,17 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         next_id = ids[pos + 1] if pos < len(ids) - 1 else None
         md_path = research_md_path(app.state.nas_dir, item.ticker, date)
         has_research = md_path is not None and md_path.exists()
-        chart_symbol = None
+        chart_meta: dict | None = None
         if item.ticker:
             t = item.ticker.strip()
-            chart_symbol = f"KRX:{t}" if len(t) == 6 and t.isdigit() else t
+            if len(t) == 6 and t.isdigit():
+                chart_meta = {
+                    "kind": "naver",
+                    "img_url": f"https://ssl.pstatic.net/imgfinance/chart/item/area/year/{t}.png",
+                    "link_url": f"https://finance.naver.com/item/main.naver?code={t}",
+                }
+            else:
+                chart_meta = {"kind": "tv", "symbol": t}
         body_html = app.state.md.render(item.body_md)
         html = app.state.env.get_template("detail_page.html.j2").render(
             digest=digest,
@@ -254,7 +261,7 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             next_id=next_id,
             body_html=body_html,
             has_research=has_research,
-            chart_symbol=chart_symbol,
+            chart_meta=chart_meta,
             asset_prefix="/",
         )
         return HTMLResponse(html)

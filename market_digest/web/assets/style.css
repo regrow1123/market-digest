@@ -143,11 +143,27 @@ button#research-btn:disabled {
 
 .chart {
   margin: 12px 0 20px;
-  height: 360px;
   width: 100%;
 }
-.chart .tradingview-widget-container,
-.chart .tradingview-widget-container__widget {
+.chart.chart-naver {
+  height: auto;
+}
+.chart.chart-naver img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: block;
+}
+.chart.chart-naver .chart-caption {
+  margin-top: 6px;
+  text-align: right;
+}
+.chart:not(.chart-naver) {
+  height: 360px;
+}
+.chart:not(.chart-naver) .tradingview-widget-container,
+.chart:not(.chart-naver) .tradingview-widget-container__widget {
   height: 100%;
   width: 100%;
 }

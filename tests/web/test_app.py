@@ -322,7 +322,7 @@ def test_research_js_served(nas):
     assert b.status_code == 200 and "global-research-badge" in b.text
 
 
-def test_detail_page_includes_tv_chart_when_ticker_present(nas):
+def test_detail_page_kr_uses_naver_chart(nas):
     _write(nas, "2026-04-20", [
         {"region": "kr", "category": "company", "title": "국내",
          "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
@@ -332,11 +332,12 @@ def test_detail_page_includes_tv_chart_when_ticker_present(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-company-0")
     assert resp.status_code == 200
-    assert "embed-widget-advanced-chart.js" in resp.text
-    assert "KRX:005930" in resp.text
+    assert "ssl.pstatic.net/imgfinance/chart/item/area/year/005930.png" in resp.text
+    assert "finance.naver.com/item/main.naver?code=005930" in resp.text
+    assert "embed-widget-advanced-chart.js" not in resp.text
 
 
-def test_detail_page_no_tv_chart_when_ticker_missing(nas):
+def test_detail_page_no_chart_when_ticker_missing(nas):
     _write(nas, "2026-04-20", [
         {"region": "kr", "category": "industry", "title": "국내 시황·산업",
          "items": [{"id": "kr-industry-0", "headline": "반도체 업황", "body_md": "-"}]},
@@ -345,11 +346,11 @@ def test_detail_page_no_tv_chart_when_ticker_missing(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-industry-0")
     assert resp.status_code == 200
+    assert "ssl.pstatic.net" not in resp.text
     assert "embed-widget-advanced-chart.js" not in resp.text
-    assert "tradingview-widget-container" not in resp.text
 
 
-def test_detail_page_us_ticker_uses_bare_symbol(nas):
+def test_detail_page_us_uses_tv_widget(nas):
     _write(nas, "2026-04-20", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
@@ -359,5 +360,6 @@ def test_detail_page_us_ticker_uses_bare_symbol(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/us-rating-0")
     assert resp.status_code == 200
+    assert "embed-widget-advanced-chart.js" in resp.text
     assert "\"symbol\": \"AAPL\"" in resp.text
-    assert "KRX" not in resp.text
+    assert "ssl.pstatic.net" not in resp.text

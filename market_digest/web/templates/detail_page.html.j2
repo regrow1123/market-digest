@@ -16,30 +16,39 @@
   {% if item.opinion or item.target %}
   <p class="meta">{% if item.opinion %}{{ item.opinion }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</p>
   {% endif %}
-  {% if chart_symbol %}
-  <div class="chart">
-    <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-      {
-        "autosize": true,
-        "symbol": "{{ chart_symbol }}",
-        "interval": "D",
-        "timezone": "Asia/Seoul",
-        "theme": "light",
-        "style": "2",
-        "locale": "kr",
-        "toolbar_bg": "transparent",
-        "hide_top_toolbar": true,
-        "hide_side_toolbar": true,
-        "hide_legend": false,
-        "allow_symbol_change": false,
-        "save_image": false,
-        "withdateranges": false
-      }
-      </script>
+  {% if chart_meta %}
+    {% if chart_meta.kind == "naver" %}
+    <div class="chart chart-naver">
+      <a href="{{ chart_meta.link_url }}" rel="noopener" target="_blank">
+        <img src="{{ chart_meta.img_url }}" alt="{{ item.name or item.ticker }} 1년 차트" loading="lazy">
+      </a>
+      <p class="chart-caption subtitle">네이버 금융에서 보기 →</p>
     </div>
-  </div>
+    {% elif chart_meta.kind == "tv" %}
+    <div class="chart">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+        {
+          "autosize": true,
+          "symbol": "{{ chart_meta.symbol }}",
+          "interval": "D",
+          "timezone": "Asia/Seoul",
+          "theme": "light",
+          "style": "2",
+          "locale": "kr",
+          "toolbar_bg": "transparent",
+          "hide_top_toolbar": true,
+          "hide_side_toolbar": true,
+          "hide_legend": false,
+          "allow_symbol_change": false,
+          "save_image": false,
+          "withdateranges": false
+        }
+        </script>
+      </div>
+    </div>
+    {% endif %}
   {% endif %}
   <div class="body">
     {{ body_html|safe }}
