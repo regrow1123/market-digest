@@ -215,3 +215,65 @@ def test_static_asset_404_for_unknown(nas):
     with TestClient(app) as c:
         resp = c.get("/assets/does-not-exist.js")
     assert resp.status_code == 404
+
+
+def _fake_runner(tracker, job_id, ticker, date_str, out_path):
+    """Test runner: marks running, writes a stub md, marks done."""
+    tracker.mark_running(job_id)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(f"# {ticker} stub — {date_str}\n", encoding="utf-8")
+    tracker.mark_done(job_id, f"/{date_str}/dummy/research")
+
+
+def test_post_research_starts_new_job_and_returns_job_id(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "b"}]},
+    ])
+    app = create_app(nas_dir=nas, research_runner=_fake_runner)
+    with TestClient(app) as c:
+        resp = c.post("/api/research", json={"ticker": "AAPL", "date": "2026-04-19"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] in ("pending", "running", "done")
+    assert body["job_id"]
+
+
+def test_post_research_returns_existing_md_immediately(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "b"}]},
+    ])
+    (nas / "research").mkdir()
+    (nas / "research" / "AAPL-2026-04-19.md").write_text("# old\n", encoding="utf-8")
+    app = create_app(nas_dir=nas, research_runner=_fake_runner)
+    with TestClient(app) as c:
+        resp = c.post("/api/research", json={"ticker": "AAPL", "date": "2026-04-19"})
+    body = resp.json()
+    assert body["status"] == "done"
+    assert body["output_url"] == "/2026-04-19/us-rating-0/research"
+
+
+def test_post_research_dedupes_active_job(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "b"}]},
+    ])
+    def slow_runner(tracker, job_id, *args, **kwargs):
+        tracker.mark_running(job_id)  # leave running; never calls mark_done
+    app = create_app(nas_dir=nas, research_runner=slow_runner)
+    with TestClient(app) as c:
+        r1 = c.post("/api/research", json={"ticker": "AAPL", "date": "2026-04-19"})
+        r2 = c.post("/api/research", json={"ticker": "AAPL", "date": "2026-04-19"})
+    assert r1.json()["job_id"] == r2.json()["job_id"]
+
+
+def test_post_research_400_if_ticker_not_in_digest(nas):
+    _write(nas, "2026-04-19", [])
+    app = create_app(nas_dir=nas, research_runner=_fake_runner)
+    with TestClient(app) as c:
+        resp = c.post("/api/research", json={"ticker": "XYZ", "date": "2026-04-19"})
+    assert resp.status_code == 400
