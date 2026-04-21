@@ -100,7 +100,10 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         path = Path(str(ref))
         if not path.is_file():
             raise HTTPException(status_code=404)
-        return FileResponse(path)
+        return FileResponse(
+            path,
+            headers={"Cache-Control": "no-cache"},
+        )
 
     from fastapi import Body
     from market_digest.models import Digest as _Digest

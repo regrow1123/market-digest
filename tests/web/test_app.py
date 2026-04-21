@@ -263,6 +263,14 @@ def test_static_asset_404_for_unknown(nas):
     assert resp.status_code == 404
 
 
+def test_assets_use_no_cache(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/assets/style.css")
+    assert resp.status_code == 200
+    assert resp.headers.get("cache-control") == "no-cache"
+
+
 def _fake_runner(tracker, job_id, ticker, date_str, out_path):
     """Test runner: marks running, writes a stub md, marks done."""
     tracker.mark_running(job_id)

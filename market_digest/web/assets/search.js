@@ -3,14 +3,7 @@
   const results = document.getElementById("search-results");
   const count = document.getElementById("search-count");
 
-  let cards = [];
-  try {
-    cards = await (await fetch("/cards.json")).json();
-  } catch (e) {
-    count.hidden = false;
-    count.textContent = "검색 데이터를 불러오지 못했습니다.";
-    return;
-  }
+  let cards = null;
 
   const esc = (s) => String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -67,12 +60,29 @@
       count.textContent = "";
       return;
     }
-    const matches = match(q);
+    if (cards === null) {
+      count.hidden = false;
+      count.textContent = "데이터 불러오는 중…";
+      return;
+    }
     count.hidden = false;
     results.hidden = false;
-    render(matches);
+    render(match(q));
   };
 
+  // Attach listener BEFORE fetching so early typing is captured.
   input.addEventListener("input", onInput);
   input.focus();
+
+  try {
+    cards = await (await fetch("/cards.json")).json();
+  } catch (e) {
+    cards = [];
+    count.hidden = false;
+    count.textContent = "검색 데이터를 불러오지 못했습니다.";
+    return;
+  }
+
+  // If user already typed while we were fetching, render now.
+  if (input.value.trim()) onInput();
 })();
