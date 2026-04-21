@@ -55,3 +55,14 @@ def test_garbled_target_falls_back_to_opinion():
 
 def test_unknown_opinion_is_neutral():
     assert infer_direction("Market Weight Update", None) == "neutral"
+
+
+def test_target_with_maintain_keyword_forces_neutral_kr():
+    assert infer_direction("Buy", "64,000 유지") == "neutral"
+    assert infer_direction("Buy", "목표가 유지") == "neutral"
+    assert infer_direction("Outperform", "170,000 재확인") == "neutral"
+
+
+def test_target_with_maintain_keyword_forces_neutral_en():
+    assert infer_direction("Buy", "$100 maintained") == "neutral"
+    assert infer_direction("Outperform", "PT reiterated at $50") == "neutral"

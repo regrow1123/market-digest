@@ -18,6 +18,13 @@ _DOWN_OPINIONS = frozenset({
     "reduce", "negative",
 })
 
+# Keywords in `target` that explicitly signal "no change" — force neutral
+# regardless of opinion text.
+_NEUTRAL_TARGET_TOKENS = (
+    "유지", "동일", "재확인",
+    "maintain", "maintained", "unchanged", "reiterate", "reiterated",
+)
+
 
 def _last_number(text: str) -> float | None:
     matches = _NUMBER_RE.findall(text)
@@ -38,6 +45,10 @@ def infer_direction(opinion: str | None, target: str | None) -> Direction:
       3. neutral as safe default.
     """
     if target:
+        target_lc = target.lower()
+        # Explicit "no change" wins over any opinion signal.
+        if any(tok in target_lc for tok in _NEUTRAL_TARGET_TOKENS):
+            return "neutral"
         m = _ARROW_RE.match(target)
         if m:
             left = _last_number(m.group(1))
