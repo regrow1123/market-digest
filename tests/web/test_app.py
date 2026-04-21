@@ -226,9 +226,20 @@ def test_search_page_renders(nas):
     with TestClient(app) as c:
         resp = c.get("/search")
     assert resp.status_code == 200
-    assert "cards.json" in resp.text
+    assert "/cards.json" in resp.text
     soup = BeautifulSoup(resp.text, "html.parser")
     assert soup.select_one("input#search-input") is not None
+    assert soup.select_one("#search-results") is not None
+
+
+def test_search_js_renders_card_shape(nas):
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/assets/search.js")
+    assert resp.status_code == 200
+    assert "card-${dir}" in resp.text
+    assert '"accent"' in resp.text or "accent" in resp.text
+    assert "region" in resp.text
 
 
 def test_static_asset_served(nas):

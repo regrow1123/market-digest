@@ -11,17 +11,38 @@
     return;
   }
 
+  const esc = (s) => String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
   const render = (matches) => {
     count.textContent = `결과 ${matches.length}`;
     results.innerHTML = matches.map((c) => {
-      const flag = c.region === "us" ? "🇺🇸" : "🇰🇷";
+      const dir = c.direction || "neutral";
+      const region = c.region === "us" ? "US" : "KR";
       const href = `/${c.date}/${c.id}`;
-      const tag = c.house ? `<span class="tag">[${c.house}]</span>` : "";
-      const nameLine = c.name ? `<span class="name">${c.name}</span>` : "";
-      const ticker = c.ticker ? ` (${c.ticker})` : "";
-      const meta = (c.opinion || c.target) ? `<span class="meta">· ${c.opinion || ""} ${c.target || ""}</span>` : "";
-      const blurb = c.company_blurb ? `<span class="blurb">${c.company_blurb}</span>` : "";
-      return `<li><a class="card" href="${href}"><span class="date-chip">${c.date}</span> ${flag} ${tag} ${nameLine}${ticker} <span class="dash">—</span> <span class="headline">${c.headline}</span> ${meta}${blurb}</a></li>`;
+      const house = c.house ? `<b class="house">${esc(c.house)}</b>` : "";
+      const tickerRow = c.ticker ? `<span class="sep">·</span><span class="ticker">${esc(c.ticker)}</span>` : "";
+      const nameLine = c.name
+        ? `<div class="name">${esc(c.name)}${c.ticker ? `<span class="ticker-inline">${esc(c.ticker)}</span>` : ""}</div>`
+        : "";
+      const metaParts = [];
+      if (c.opinion) metaParts.push(esc(c.opinion).toUpperCase());
+      if (c.target) metaParts.push(esc(c.target));
+      const meta = metaParts.length
+        ? `<div class="meta meta-${dir}">${metaParts.join(" · ")}</div>`
+        : "";
+      const blurb = c.company_blurb ? `<div class="blurb">${esc(c.company_blurb)}</div>` : "";
+      const dateChip = `<span class="date-chip">${esc(c.date)}</span>`;
+      return `<li><a class="card card-${dir}" href="${href}">`
+        + `<span class="accent"></span>`
+        + `<div class="card-body">`
+        +   `<div class="eyebrow">${dateChip}<span class="region">${region}</span>${house}${tickerRow}</div>`
+        +   nameLine
+        +   `<div class="headline">${esc(c.headline)}</div>`
+        +   meta
+        +   blurb
+        + `</div></a></li>`;
     }).join("");
   };
 
