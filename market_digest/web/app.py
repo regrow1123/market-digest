@@ -40,6 +40,14 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
     app.state.tracker = JobTracker()
     app.state.research_runner = research_runner
 
+    @app.middleware("http")
+    async def _no_cache(request, call_next):
+        resp = await call_next(request)
+        # Asset route already sets its own Cache-Control; don't overwrite.
+        if "cache-control" not in resp.headers:
+            resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
     from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
     from market_digest.web.data import build_cards_index, list_dates

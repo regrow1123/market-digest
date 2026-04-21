@@ -1,0 +1,5 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - link "←" [ref=e4] [cursor=pointer]:
+      - /url: /
+    - searchbox "종목, 티커, 하우스…" [active] [ref=e5]

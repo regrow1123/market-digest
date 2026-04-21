@@ -271,6 +271,15 @@ def test_assets_use_no_cache(nas):
     assert resp.headers.get("cache-control") == "no-cache"
 
 
+def test_html_and_json_pages_have_no_cache(nas):
+    _write(nas, "2026-04-20", [])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        for path in ("/2026-04-20", "/search", "/cards.json", "/healthz"):
+            resp = c.get(path)
+            assert resp.headers.get("cache-control") == "no-cache", path
+
+
 def _fake_runner(tracker, job_id, ticker, date_str, out_path):
     """Test runner: marks running, writes a stub md, marks done."""
     tracker.mark_running(job_id)
