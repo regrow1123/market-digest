@@ -69,7 +69,8 @@ def test_card_page_renders_groups_and_cards(nas):
     _write(nas, "2026-04-19", [
         {"region": "kr", "category": "company", "title": "국내 기업리포트",
          "items": [{"id": "kr-company-0", "headline": "HBM 회복", "body_md": "-",
-                    "house": "MS", "name": "삼성전자", "ticker": "005930"}]},
+                    "house": "메리츠", "name": "삼성전자", "ticker": "005930",
+                    "opinion": "Buy", "target": "85,000 → 95,000"}]},
     ])
     app = create_app(nas_dir=nas)
     with TestClient(app) as c:
@@ -78,7 +79,13 @@ def test_card_page_renders_groups_and_cards(nas):
     soup = BeautifulSoup(resp.text, "html.parser")
     link = soup.select_one("a.card")
     assert link["href"] == "/2026-04-19/kr-company-0"
-    assert "삼성전자" in link.text
+    assert "card-up" in (link.get("class") or [])
+    assert soup.select_one("a.card .accent") is not None
+    assert soup.select_one("a.card .region").text == "KR"
+    assert soup.select_one("a.card .name").get_text(strip=False).startswith("삼성전자")
+    h2 = soup.select_one("section.group h2.group-title")
+    assert h2.text.strip() == "국내 기업리포트"
+    assert "🇰🇷" not in resp.text
 
 
 def test_card_page_prev_next_clean_urls(nas):

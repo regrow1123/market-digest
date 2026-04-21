@@ -5,7 +5,7 @@
   {% if prev_date %}<a class="nav-prev" href="/{{ prev_date }}">◀</a>{% else %}<span class="nav-prev disabled">◀</span>{% endif %}
   <span class="date-label">{{ digest.date }} ({{ weekday }})</span>
   {% if next_date %}<a class="nav-next" href="/{{ next_date }}">▶</a>{% else %}<span class="nav-next disabled">▶</span>{% endif %}
-  <a class="nav-search" href="/search">🔍</a>
+  <a class="nav-search" href="/search">검색</a>
 </header>
 
 {% if not digest.groups %}
@@ -13,17 +13,26 @@
 {% else %}
   {% for group in digest.groups %}
   <section class="group">
-    <h2>{{ group_flag(group.region) }} {{ group.title }}</h2>
+    <h2 class="group-title">{{ group.title }}</h2>
     <ul class="cards">
       {% for item in group.items %}
+      {% set dir = directions[item.id] %}
       <li>
-        <a class="card" href="/{{ digest.date }}/{{ item.id }}">
-          {% if item.house %}<span class="tag">[{{ item.house }}]</span>{% endif %}
-          {% if item.name %}<span class="name">{{ item.name }}</span>{% if item.ticker %} ({{ item.ticker }}){% endif %}{% endif %}
-          <span class="dash">—</span>
-          <span class="headline">{{ item.headline }}</span>
-          {% if item.opinion or item.target %}<span class="meta">·{% if item.opinion %} {{ item.opinion }}{% endif %}{% if item.target %} {{ item.target }}{% endif %}</span>{% endif %}
-          {% if item.company_blurb %}<span class="blurb">{{ item.company_blurb }}</span>{% endif %}
+        <a class="card card-{{ dir }}" href="/{{ digest.date }}/{{ item.id }}">
+          <span class="accent"></span>
+          <div class="card-body">
+            <div class="eyebrow">
+              <span class="region">{{ "KR" if group.region == "kr" else "US" }}</span>
+              {% if item.house %}<b class="house">{{ item.house }}</b>{% endif %}
+              {% if item.ticker %}<span class="sep">·</span><span class="ticker">{{ item.ticker }}</span>{% endif %}
+            </div>
+            {% if item.name %}<div class="name">{{ item.name }}{% if item.ticker %}<span class="ticker-inline">{{ item.ticker }}</span>{% endif %}</div>{% endif %}
+            <div class="headline">{{ item.headline }}</div>
+            {% if item.opinion or item.target %}
+            <div class="meta meta-{{ dir }}">{% if item.opinion %}{{ item.opinion|upper }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</div>
+            {% endif %}
+            {% if item.company_blurb %}<div class="blurb">{{ item.company_blurb }}</div>{% endif %}
+          </div>
         </a>
       </li>
       {% endfor %}
