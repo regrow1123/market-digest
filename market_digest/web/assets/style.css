@@ -216,49 +216,56 @@ article.detail .body ul { padding-left: 20px; margin: 10px 0; }
 article.detail .body li { margin: 4px 0; }
 article.detail .body a { color: var(--link); }
 
-/* ---------- Inline contextual actions (원문, 차트) ---------- */
-.inline-action {
-  font: 600 11px/1 "SF Mono", Menlo, Consolas, monospace;
-  letter-spacing: 0.3px;
-  color: var(--link);
-  text-decoration: none;
-  white-space: nowrap;
-  margin-left: 6px;
-}
-.inline-action:hover { text-decoration: underline; }
-
-article.detail h1 .inline-action.h1-action {
-  font-size: 11px;
-  vertical-align: middle;
-  margin-left: 10px;
-  position: relative;
-  top: -2px;
-}
-
-/* ---------- Research CTA (primary button at bottom) ---------- */
-article.detail .cta {
-  display: block;
-  margin-top: 22px;
-  padding: 12px 16px;
-  border: 1px solid var(--link);
+/* ---------- "더 보기" footer card ---------- */
+article.detail .more-card {
+  margin-top: 24px;
+  padding: 14px 16px 10px;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--link);
-  color: #fff;
+  background: var(--bg-card);
+}
+article.detail .more-title {
+  font: 600 10px/1 "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--fg-muted);
+  margin: 0 0 8px;
+}
+article.detail .more-rows { list-style: none; margin: 0; padding: 0; }
+article.detail .more-rows li { margin: 6px 0; }
+article.detail .more-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-page);
+  color: var(--fg-primary);
   font-size: 14px;
-  font-weight: 600;
-  text-align: center;
   text-decoration: none;
   cursor: pointer;
   font-family: inherit;
   width: 100%;
+  text-align: left;
 }
-article.detail .cta:disabled,
-article.detail button.cta:disabled { opacity: 0.5; cursor: wait; }
-article.detail .cta:hover { filter: brightness(0.95); }
+article.detail .more-row .sym {
+  font: 500 14px/1 "SF Mono", Menlo, Consolas, monospace;
+  color: var(--fg-subtle);
+  width: 14px;
+  flex-shrink: 0;
+}
+article.detail .more-row:hover { background: var(--border); }
+article.detail .more-row-primary {
+  background: var(--link);
+  border-color: var(--link);
+  color: #fff;
+  font-weight: 600;
+}
+article.detail .more-row-primary .sym { color: #fff; }
+article.detail .more-row-primary:hover { filter: brightness(0.95); background: var(--link); }
+article.detail .more-row-primary:disabled { opacity: 0.5; cursor: wait; }
 
 article.detail #research-status {
   display: block;
-  margin-top: 8px;
+  margin-top: 4px;
   text-align: center;
   color: var(--fg-muted);
   font-size: 12px;

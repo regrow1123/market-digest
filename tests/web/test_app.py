@@ -124,28 +124,42 @@ def test_detail_page_renders(nas):
     soup = BeautifulSoup(resp.text, "html.parser")
     assert soup.select_one("article.detail.detail-up") is not None
     assert soup.select_one(".eyebrow .region").text == "US"
-    # 원문 inline-action lives inside eyebrow
-    eyebrow = soup.select_one(".eyebrow")
-    origin = eyebrow.select_one("a.inline-action")
-    assert origin is not None
-    assert "원문" in origin.text
-    assert origin["href"] == "https://src.example/x"
-    # 차트 inline-action lives inside h1
-    h1 = soup.select_one("article h1")
-    chart = h1.select_one("a.inline-action.h1-action")
-    assert chart is not None
-    assert "차트" in chart.text
-    assert "tradingview.com/symbols/AAPL" in chart["href"]
-    # No inline TV embed anymore
-    assert soup.select_one(".chart-embed") is None
-    assert "embed-widget-advanced-chart.js" not in resp.text
-    # CTA button at bottom
-    btn = soup.select_one("button#research-btn.cta.cta-primary")
-    assert btn is not None
-    assert "딥 리서치" in btn.text
+    # No inline actions in eyebrow or h1 any more
+    assert soup.select_one(".eyebrow a.inline-action") is None
+    assert soup.select_one("article h1 a.inline-action") is None
+    # more-card at the end holds 3 rows
+    card = soup.select_one(".more-card")
+    assert card is not None
+    rows = card.select("li .more-row")
+    assert len(rows) == 3
+    hrefs = [r.get("href") or "" for r in rows]
+    assert "https://src.example/x" in hrefs
+    assert any("tradingview.com/symbols/AAPL" in h for h in hrefs)
+    # Primary (연구) row is a button
+    primary = card.select_one(".more-row-primary")
+    assert primary is not None
+    assert "딥 리서치" in primary.text
 
 
-def test_detail_page_inline_actions_order(nas):
+def test_detail_page_kr_chart_in_more_card(nas):
+    _write(nas, "2026-04-20", [
+        {"region": "kr", "category": "company", "title": "국내",
+         "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
+                    "headline": "h", "body_md": "-",
+                    "opinion": "Buy", "target": "85,000 → 95,000"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-20/kr-company-0")
+    soup = BeautifulSoup(resp.text, "html.parser")
+    card = soup.select_one(".more-card")
+    assert card is not None
+    hrefs = [r.get("href") or "" for r in card.select("li .more-row")]
+    assert any("finance.naver.com/item/main.naver?code=005930" in h for h in hrefs)
+    assert "네이버 금융 차트" in resp.text
+
+
+def test_detail_page_more_card_order(nas):
     _write(nas, "2026-04-19", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
@@ -157,34 +171,13 @@ def test_detail_page_inline_actions_order(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-19/us-rating-0")
     text = resp.text
-    i_origin = text.find("원문↗")
-    i_chart = text.find("차트↗")
     i_body = text.find('class="body"')
-    i_cta = text.find("딥 리서치")
-    # 원문 appears first (in eyebrow), then 차트 (in h1), then body, then CTA
-    assert 0 <= i_origin < i_chart < i_body < i_cta, (i_origin, i_chart, i_body, i_cta)
-
-
-def test_detail_page_kr_chart_link_in_h1(nas):
-    _write(nas, "2026-04-20", [
-        {"region": "kr", "category": "company", "title": "국내",
-         "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
-                    "headline": "h", "body_md": "-",
-                    "opinion": "Buy", "target": "85,000 → 95,000"}]},
-    ])
-    app = create_app(nas_dir=nas)
-    with TestClient(app) as c:
-        resp = c.get("/2026-04-20/kr-company-0")
-    soup = BeautifulSoup(resp.text, "html.parser")
-    h1 = soup.select_one("article h1")
-    link = h1.select_one("a.inline-action.h1-action")
-    assert link is not None
-    assert "차트" in link.text
-    assert "finance.naver.com/item/main.naver?code=005930" in link["href"]
-    # meta-strip no longer has a chart-link
-    meta = soup.select_one(".meta-strip")
-    assert meta is not None
-    assert meta.select_one("a.chart-link") is None
+    i_more = text.find('class="more-card"')
+    i_origin = text.find("원문 기사")
+    i_chart = text.find("TradingView 차트")
+    i_research = text.find("딥 리서치")
+    assert 0 <= i_body < i_more
+    assert i_more < i_origin < i_chart < i_research
 
 
 def test_detail_page_research_link_when_md_exists(nas):

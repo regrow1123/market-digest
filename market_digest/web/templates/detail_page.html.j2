@@ -14,13 +14,9 @@
     <div class="eyebrow">
       <span class="region">{{ "KR" if region == "kr" else "US" }}</span>
       {% if item.house %}<b class="house">{{ item.house }}</b>{% endif %}
-      {% if item.url %}<a class="inline-action" href="{{ item.url }}" rel="noopener" target="_blank">원문↗</a>{% endif %}
       {% if item.ticker %}<span class="sep">·</span><span class="ticker">{{ item.ticker }}</span>{% endif %}
     </div>
-    <h1>
-      {% if item.name %}{{ item.name }}{% if item.ticker %}<span class="ticker-inline">{{ item.ticker }}</span>{% endif %}{% else %}{{ item.headline }}{% endif %}
-      {% if chart_link %}<a class="inline-action h1-action" href="{{ chart_link.url }}" rel="noopener" target="_blank">차트↗</a>{% endif %}
-    </h1>
+    <h1>{% if item.name %}{{ item.name }}{% if item.ticker %}<span class="ticker-inline">{{ item.ticker }}</span>{% endif %}{% else %}{{ item.headline }}{% endif %}</h1>
     {% if item.company_blurb %}<p class="blurb">{{ item.company_blurb }}</p>{% endif %}
     {% if item.opinion or item.target %}
     <div class="meta-strip meta-{{ direction }}">
@@ -36,13 +32,40 @@
     </div>
     {% endif %}
 
-    {% if has_research %}
-      <a class="cta cta-primary" href="/{{ digest.date }}/{{ item.id }}/research" rel="noopener">딥 리서치 보기</a>
-    {% elif item.ticker %}
-      <button id="research-btn" class="cta cta-primary" type="button"
-              data-ticker="{{ item.ticker }}" data-date="{{ digest.date }}">딥 리서치 시작</button>
-      <span id="research-status" class="subtitle"></span>
-    {% endif %}
+    <section class="more-card">
+      <h3 class="more-title">더 보기</h3>
+      <ul class="more-rows">
+        {% if item.url %}
+        <li>
+          <a class="more-row" href="{{ item.url }}" rel="noopener" target="_blank">
+            <span class="sym">↗</span><span>원문 기사</span>
+          </a>
+        </li>
+        {% endif %}
+        {% if chart_link %}
+        <li>
+          <a class="more-row" href="{{ chart_link.url }}" rel="noopener" target="_blank">
+            <span class="sym">↗</span><span>{{ "네이버 금융 차트" if region == "kr" else "TradingView 차트" }}</span>
+          </a>
+        </li>
+        {% endif %}
+        {% if has_research %}
+        <li>
+          <a class="more-row more-row-primary" href="/{{ digest.date }}/{{ item.id }}/research" rel="noopener">
+            <span class="sym">▶</span><span>딥 리서치 보기</span>
+          </a>
+        </li>
+        {% elif item.ticker %}
+        <li>
+          <button id="research-btn" class="more-row more-row-primary" type="button"
+                  data-ticker="{{ item.ticker }}" data-date="{{ digest.date }}">
+            <span class="sym">▶</span><span>딥 리서치 시작</span>
+          </button>
+          <span id="research-status" class="subtitle"></span>
+        </li>
+        {% endif %}
+      </ul>
+    </section>
   </div>
 </article>
 {% endblock %}
