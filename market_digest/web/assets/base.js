@@ -7,7 +7,7 @@
       if (!resp.ok) return;
       const jobs = await resp.json();
       if (jobs.length > 0) {
-        badge.textContent = `🔍 ${jobs.length}`;
+        badge.textContent = String(jobs.length);
         badge.style.display = "inline";
       } else {
         badge.style.display = "none";
