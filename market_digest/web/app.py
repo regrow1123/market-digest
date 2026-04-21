@@ -261,16 +261,12 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         md_path = research_md_path(app.state.nas_dir, item.ticker, date)
         has_research = md_path is not None and md_path.exists()
         chart_link: dict | None = None
-        chart_tv: dict | None = None
         if item.ticker:
             t = item.ticker.strip()
             if len(t) == 6 and t.isdigit():
-                chart_link = {
-                    "url": f"https://finance.naver.com/item/main.naver?code={t}",
-                    "label": "📈 네이버 금융에서 차트 보기",
-                }
+                chart_link = {"url": f"https://finance.naver.com/item/main.naver?code={t}"}
             else:
-                chart_tv = {"symbol": t}
+                chart_link = {"url": f"https://www.tradingview.com/symbols/{t}/"}
         body_html = app.state.md.render(item.body_md)
         from market_digest.web.direction import infer_direction
         direction = infer_direction(item.opinion, item.target)
@@ -284,7 +280,6 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             body_html=body_html,
             has_research=has_research,
             chart_link=chart_link,
-            chart_tv=chart_tv,
             asset_prefix="/",
         )
         return HTMLResponse(html)

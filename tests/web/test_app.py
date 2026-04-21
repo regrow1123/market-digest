@@ -114,6 +114,7 @@ def test_detail_page_renders(nas):
                     "headline": "MS upgrade", "body_md": "- detail",
                     "opinion": "Buy", "target": "$200 → $240",
                     "company_blurb": "스마트폰·서비스",
+                    "house": "MS",
                     "url": "https://src.example/x"}]},
     ])
     app = create_app(nas_dir=nas)
@@ -123,40 +124,48 @@ def test_detail_page_renders(nas):
     soup = BeautifulSoup(resp.text, "html.parser")
     assert soup.select_one("article.detail.detail-up") is not None
     assert soup.select_one(".eyebrow .region").text == "US"
-    # source-link lives inside .body (at the end)
-    body = soup.select_one("article .body")
-    assert body is not None
-    assert body.select_one(".source-link a") is not None
-    # TV embed panel present for US ticker
-    assert soup.select_one(".chart-embed") is not None
-    # CTA button at bottom (no md yet)
+    # 원문 inline-action lives inside eyebrow
+    eyebrow = soup.select_one(".eyebrow")
+    origin = eyebrow.select_one("a.inline-action")
+    assert origin is not None
+    assert "원문" in origin.text
+    assert origin["href"] == "https://src.example/x"
+    # 차트 inline-action lives inside h1
+    h1 = soup.select_one("article h1")
+    chart = h1.select_one("a.inline-action.h1-action")
+    assert chart is not None
+    assert "차트" in chart.text
+    assert "tradingview.com/symbols/AAPL" in chart["href"]
+    # No inline TV embed anymore
+    assert soup.select_one(".chart-embed") is None
+    assert "embed-widget-advanced-chart.js" not in resp.text
+    # CTA button at bottom
     btn = soup.select_one("button#research-btn.cta.cta-primary")
     assert btn is not None
     assert "딥 리서치" in btn.text
 
 
-def test_detail_page_contextual_order(nas):
+def test_detail_page_inline_actions_order(nas):
     _write(nas, "2026-04-19", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
                     "headline": "h", "body_md": "- detail",
+                    "house": "MS",
                     "url": "https://src.example/x"}]},
     ])
     app = create_app(nas_dir=nas)
     with TestClient(app) as c:
         resp = c.get("/2026-04-19/us-rating-0")
     text = resp.text
-    i_chart = text.find("embed-widget-advanced-chart.js")
+    i_origin = text.find("원문↗")
+    i_chart = text.find("차트↗")
     i_body = text.find('class="body"')
-    i_source = text.find("원문 링크")
     i_cta = text.find("딥 리서치")
-    # chart embed appears before body
-    assert 0 <= i_chart < i_body, (i_chart, i_body)
-    # source link appears inside/after body, and before CTA
-    assert i_body < i_source < i_cta, (i_body, i_source, i_cta)
+    # 원문 appears first (in eyebrow), then 차트 (in h1), then body, then CTA
+    assert 0 <= i_origin < i_chart < i_body < i_cta, (i_origin, i_chart, i_body, i_cta)
 
 
-def test_detail_page_kr_has_inline_chart_link_in_meta(nas):
+def test_detail_page_kr_chart_link_in_h1(nas):
     _write(nas, "2026-04-20", [
         {"region": "kr", "category": "company", "title": "국내",
          "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
@@ -167,14 +176,15 @@ def test_detail_page_kr_has_inline_chart_link_in_meta(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/kr-company-0")
     soup = BeautifulSoup(resp.text, "html.parser")
-    meta = soup.select_one(".meta-strip")
-    assert meta is not None
-    link = meta.select_one("a.chart-link")
+    h1 = soup.select_one("article h1")
+    link = h1.select_one("a.inline-action.h1-action")
     assert link is not None
     assert "차트" in link.text
-    assert "finance.naver.com" in link["href"]
-    # No TV embed for KR
-    assert soup.select_one(".chart-embed") is None
+    assert "finance.naver.com/item/main.naver?code=005930" in link["href"]
+    # meta-strip no longer has a chart-link
+    meta = soup.select_one(".meta-strip")
+    assert meta is not None
+    assert meta.select_one("a.chart-link") is None
 
 
 def test_detail_page_research_link_when_md_exists(nas):
@@ -440,7 +450,7 @@ def test_detail_page_no_chart_when_ticker_missing(nas):
     assert "embed-widget-advanced-chart.js" not in resp.text
 
 
-def test_detail_page_us_uses_tv_widget(nas):
+def test_detail_page_us_uses_tv_link(nas):
     _write(nas, "2026-04-20", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
@@ -450,6 +460,6 @@ def test_detail_page_us_uses_tv_widget(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-20/us-rating-0")
     assert resp.status_code == 200
-    assert "embed-widget-advanced-chart.js" in resp.text
-    assert "\"symbol\": \"AAPL\"" in resp.text
+    assert "embed-widget-advanced-chart.js" not in resp.text
+    assert "tradingview.com/symbols/AAPL" in resp.text
     assert "finance.naver.com" not in resp.text

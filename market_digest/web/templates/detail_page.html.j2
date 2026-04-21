@@ -14,53 +14,26 @@
     <div class="eyebrow">
       <span class="region">{{ "KR" if region == "kr" else "US" }}</span>
       {% if item.house %}<b class="house">{{ item.house }}</b>{% endif %}
+      {% if item.url %}<a class="inline-action" href="{{ item.url }}" rel="noopener" target="_blank">원문↗</a>{% endif %}
       {% if item.ticker %}<span class="sep">·</span><span class="ticker">{{ item.ticker }}</span>{% endif %}
     </div>
-    <h1>{% if item.name %}{{ item.name }}{% if item.ticker %}<span class="ticker-inline">{{ item.ticker }}</span>{% endif %}{% else %}{{ item.headline }}{% endif %}</h1>
+    <h1>
+      {% if item.name %}{{ item.name }}{% if item.ticker %}<span class="ticker-inline">{{ item.ticker }}</span>{% endif %}{% else %}{{ item.headline }}{% endif %}
+      {% if chart_link %}<a class="inline-action h1-action" href="{{ chart_link.url }}" rel="noopener" target="_blank">차트↗</a>{% endif %}
+    </h1>
     {% if item.company_blurb %}<p class="blurb">{{ item.company_blurb }}</p>{% endif %}
-    {% if item.opinion or item.target or chart_link %}
+    {% if item.opinion or item.target %}
     <div class="meta-strip meta-{{ direction }}">
       {% if item.opinion %}<span class="label">RATING</span> {{ item.opinion|upper }}{% endif %}
       {% if item.opinion and item.target %} &nbsp;·&nbsp; {% endif %}
       {% if item.target %}<span class="label">TARGET</span> {{ item.target }}{% endif %}
-      {% if chart_link %}<a class="chart-link" href="{{ chart_link.url }}" rel="noopener" target="_blank">차트 →</a>{% endif %}
-    </div>
-    {% endif %}
-
-    {% if chart_tv %}
-    <div class="chart-embed">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-        {
-          "autosize": true,
-          "symbol": "{{ chart_tv.symbol }}",
-          "interval": "D",
-          "range": "6M",
-          "timezone": "Asia/Seoul",
-          "theme": "light",
-          "style": "2",
-          "locale": "kr",
-          "toolbar_bg": "transparent",
-          "hide_top_toolbar": true,
-          "hide_side_toolbar": true,
-          "hide_legend": false,
-          "allow_symbol_change": false,
-          "save_image": false,
-          "withdateranges": true
-        }
-        </script>
-      </div>
     </div>
     {% endif %}
 
     {% if body_html %}
     <div class="body">
       {{ body_html|safe }}
-      {% if item.url %}<p class="source-link"><a href="{{ item.url }}" rel="noopener" target="_blank">원문 링크 →</a></p>{% endif %}
     </div>
-    {% elif item.url %}
-    <p class="source-link"><a href="{{ item.url }}" rel="noopener" target="_blank">원문 링크 →</a></p>
     {% endif %}
 
     {% if has_research %}
