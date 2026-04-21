@@ -211,11 +211,17 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             raise HTTPException(status_code=404)
         dates = list_dates(app.state.nas_dir)
         prev_d, next_d = prev_next(dates, date)
+        from market_digest.web.direction import infer_direction
+        directions = {
+            item.id: infer_direction(item.opinion, item.target)
+            for group in digest.groups for item in group.items
+        }
         html = app.state.env.get_template("card_page.html.j2").render(
             digest=digest,
             prev_date=prev_d,
             next_date=next_d,
             weekday=_weekday(date),
+            directions=directions,
             asset_prefix="/",
         )
         return HTMLResponse(html)
@@ -236,6 +242,7 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
         if found is None:
             raise HTTPException(status_code=404)
         gi, ii, item = found
+        region = digest.groups[gi].region
         ids = flat_ids(digest)
         pos = ids.index(item_id)
         prev_id = ids[pos - 1] if pos > 0 else None
@@ -254,9 +261,13 @@ def create_app(nas_dir: Path | None, research_runner=None) -> FastAPI:
             else:
                 chart_tv = {"symbol": t}
         body_html = app.state.md.render(item.body_md)
+        from market_digest.web.direction import infer_direction
+        direction = infer_direction(item.opinion, item.target)
         html = app.state.env.get_template("detail_page.html.j2").render(
             digest=digest,
             item=item,
+            region=region,
+            direction=direction,
             prev_id=prev_id,
             next_id=next_id,
             body_html=body_html,
