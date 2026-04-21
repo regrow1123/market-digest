@@ -8,6 +8,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from market_digest.models import CardIndexEntry, Digest
+from market_digest.web.direction import infer_direction
 
 log = logging.getLogger(__name__)
 
@@ -89,6 +90,7 @@ def build_cards_index(nas_dir: Path) -> list[dict]:
                     opinion=item.opinion,
                     target=item.target,
                     company_blurb=item.company_blurb,
+                    direction=infer_direction(item.opinion, item.target),
                 )
                 out.append(entry.model_dump(exclude_none=True))
     return out

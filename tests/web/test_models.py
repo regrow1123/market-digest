@@ -99,3 +99,20 @@ def test_item_accepts_company_blurb():
 def test_item_company_blurb_defaults_to_none():
     item = Item.model_validate({"id": "x", "headline": "h", "body_md": "b"})
     assert item.company_blurb is None
+
+
+def test_card_index_entry_accepts_direction():
+    from market_digest.models import CardIndexEntry
+    e = CardIndexEntry(
+        date="2026-04-20", id="us-rating-0", region="us", category="rating",
+        headline="h", direction="up",
+    )
+    assert e.direction == "up"
+
+
+def test_card_index_entry_direction_defaults_none():
+    from market_digest.models import CardIndexEntry
+    e = CardIndexEntry(
+        date="2026-04-20", id="us-rating-0", region="us", category="rating", headline="h",
+    )
+    assert e.direction is None

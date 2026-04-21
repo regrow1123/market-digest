@@ -58,3 +58,4 @@ class CardIndexEntry(BaseModel):
     opinion: str | None = None
     target: str | None = None
     company_blurb: str | None = None
+    direction: Literal["up", "down", "neutral"] | None = None

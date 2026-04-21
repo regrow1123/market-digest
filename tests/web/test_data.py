@@ -119,3 +119,32 @@ def test_build_cards_index_flattens_desc_with_blurb(tmp_path):
     assert [e["date"] for e in index] == ["2026-04-19", "2026-04-18"]
     assert index[1]["company_blurb"] == "스마트폰"
     assert "body_md" not in index[0]
+
+
+def test_build_cards_index_populates_direction_from_target_arrow(tmp_path):
+    _write(tmp_path, "2026-04-20", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "headline": "h",
+                    "body_md": "-", "target": "$200 → $240"}]},
+    ])
+    index = build_cards_index(tmp_path)
+    assert index[0]["direction"] == "up"
+
+
+def test_build_cards_index_direction_down_from_opinion(tmp_path):
+    _write(tmp_path, "2026-04-20", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "TSLA", "headline": "h",
+                    "body_md": "-", "opinion": "Sell"}]},
+    ])
+    index = build_cards_index(tmp_path)
+    assert index[0]["direction"] == "down"
+
+
+def test_build_cards_index_direction_absent_when_no_signals(tmp_path):
+    _write(tmp_path, "2026-04-20", [
+        {"region": "kr", "category": "company", "title": "국내",
+         "items": [{"id": "kr-company-0", "headline": "h", "body_md": "-"}]},
+    ])
+    index = build_cards_index(tmp_path)
+    assert index[0]["direction"] == "neutral"
