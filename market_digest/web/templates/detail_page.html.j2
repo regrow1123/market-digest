@@ -2,65 +2,74 @@
 {% block title %}{{ item.name or item.headline }} · {{ digest.date }}{% endblock %}
 {% block content %}
 <header class="date-header">
-  <a class="back" href="/{{ digest.date }}">←&nbsp;{{ digest.date }}</a>
+  <a class="back" href="/{{ digest.date }}">← {{ digest.date }}</a>
   {% if prev_id %}<a class="nav-prev" href="/{{ digest.date }}/{{ prev_id }}">◀</a>{% else %}<span class="nav-prev disabled">◀</span>{% endif %}
   {% if next_id %}<a class="nav-next" href="/{{ digest.date }}/{{ next_id }}">▶</a>{% else %}<span class="nav-next disabled">▶</span>{% endif %}
+  <a class="nav-search" href="/search">검색</a>
 </header>
 
-<article>
-  <h1>
-    {% if item.name %}{{ item.name }}{% if item.ticker %} ({{ item.ticker }}){% endif %}{% else %}{{ item.headline }}{% endif %}
-    {% if item.house %}<span class="tag">[{{ item.house }}]</span>{% endif %}
-  </h1>
-  {% if item.company_blurb %}<p class="blurb">{{ item.company_blurb }}</p>{% endif %}
-  {% if item.opinion or item.target %}
-  <p class="meta">{% if item.opinion %}{{ item.opinion }}{% endif %}{% if item.opinion and item.target %} · {% endif %}{% if item.target %}{{ item.target }}{% endif %}</p>
-  {% endif %}
-  {% if chart_link %}
-  <p class="chart-link">
-    <a href="{{ chart_link.url }}" rel="noopener" target="_blank">{{ chart_link.label }}</a>
-  </p>
-  {% elif chart_tv %}
-  <div class="chart">
-    <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-      {
-        "autosize": true,
-        "symbol": "{{ chart_tv.symbol }}",
-        "interval": "D",
-        "timezone": "Asia/Seoul",
-        "theme": "light",
-        "style": "2",
-        "locale": "kr",
-        "toolbar_bg": "transparent",
-        "hide_top_toolbar": true,
-        "hide_side_toolbar": true,
-        "hide_legend": false,
-        "allow_symbol_change": false,
-        "save_image": false,
-        "withdateranges": false
-      }
-      </script>
+<article class="detail detail-{{ direction }}">
+  <span class="accent"></span>
+  <div class="detail-body">
+    <div class="eyebrow">
+      <span class="region">{{ "KR" if region == "kr" else "US" }}</span>
+      {% if item.house %}<b class="house">{{ item.house }}</b>{% endif %}
+      {% if item.ticker %}<span class="sep">·</span><span class="ticker">{{ item.ticker }}</span>{% endif %}
+    </div>
+    <h1>{% if item.name %}{{ item.name }}{% if item.ticker %}<span class="ticker-inline">{{ item.ticker }}</span>{% endif %}{% else %}{{ item.headline }}{% endif %}</h1>
+    {% if item.company_blurb %}<p class="blurb">{{ item.company_blurb }}</p>{% endif %}
+    {% if item.opinion or item.target %}
+    <div class="meta-strip meta-{{ direction }}">
+      {% if item.opinion %}<span class="label">RATING</span> {{ item.opinion|upper }}{% endif %}
+      {% if item.opinion and item.target %} &nbsp;·&nbsp; {% endif %}
+      {% if item.target %}<span class="label">TARGET</span> {{ item.target }}{% endif %}
+    </div>
+    {% endif %}
+    {% if body_html %}
+    <div class="body">
+      {{ body_html|safe }}
+    </div>
+    {% endif %}
+
+    <div class="actions">
+      {% if item.url %}<a class="action" href="{{ item.url }}" rel="noopener" target="_blank">원문 링크 →</a>{% endif %}
+      {% if chart_link %}
+      <a class="action" href="{{ chart_link.url }}" rel="noopener" target="_blank">{{ chart_link.label }}</a>
+      {% elif chart_tv %}
+      <div class="chart-embed">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+          {
+            "autosize": true,
+            "symbol": "{{ chart_tv.symbol }}",
+            "interval": "D",
+            "range": "6M",
+            "timezone": "Asia/Seoul",
+            "theme": "light",
+            "style": "2",
+            "locale": "kr",
+            "toolbar_bg": "transparent",
+            "hide_top_toolbar": true,
+            "hide_side_toolbar": true,
+            "hide_legend": false,
+            "allow_symbol_change": false,
+            "save_image": false,
+            "withdateranges": true
+          }
+          </script>
+        </div>
+      </div>
+      {% endif %}
+      {% if has_research %}
+        <a class="action" href="/{{ digest.date }}/{{ item.id }}/research" rel="noopener">딥 리서치 보기</a>
+      {% elif item.ticker %}
+        <button id="research-btn" class="action" type="button"
+                data-ticker="{{ item.ticker }}" data-date="{{ digest.date }}">딥 리서치 시작</button>
+        <span id="research-status" class="subtitle"></span>
+      {% endif %}
     </div>
   </div>
-  {% endif %}
-  {% if body_html %}
-  <div class="body">
-    {{ body_html|safe }}
-  </div>
-  {% endif %}
-  {% if item.url %}<p class="source"><a href="{{ item.url }}" rel="noopener">원문 링크</a></p>{% endif %}
-
-  <p class="source">
-    {% if has_research %}
-      <a class="research-link" href="/{{ digest.date }}/{{ item.id }}/research" rel="noopener">🔍 딥 리서치 보기</a>
-    {% elif item.ticker %}
-      <button id="research-btn" type="button"
-              data-ticker="{{ item.ticker }}" data-date="{{ digest.date }}">🔍 딥 리서치 시작</button>
-      <span id="research-status" class="subtitle"></span>
-    {% endif %}
-  </p>
 </article>
 {% endblock %}
 {% block scripts %}

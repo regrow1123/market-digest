@@ -112,6 +112,7 @@ def test_detail_page_renders(nas):
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
                     "headline": "MS upgrade", "body_md": "- detail",
+                    "opinion": "Buy", "target": "$200 → $240",
                     "company_blurb": "스마트폰·서비스"}]},
     ])
     app = create_app(nas_dir=nas)
@@ -119,11 +120,33 @@ def test_detail_page_renders(nas):
         resp = c.get("/2026-04-19/us-rating-0")
     assert resp.status_code == 200
     soup = BeautifulSoup(resp.text, "html.parser")
-    assert soup.select_one("article h1")
+    assert soup.select_one("article.detail.detail-up") is not None
+    assert soup.select_one("article .accent") is not None
+    assert soup.select_one(".eyebrow .region").text == "US"
+    h1 = soup.select_one("article h1")
+    assert "Apple" in h1.text
     assert "스마트폰" in resp.text
-    # research UI present as BUTTON because md doesn't exist yet
+    assert "RATING" in resp.text and "TARGET" in resp.text
+    assert "🇺🇸" not in resp.text
+    assert "📈" not in resp.text
     assert soup.select_one("button#research-btn") is not None
-    assert soup.select_one("a.research-link") is None
+
+
+def test_detail_page_actions_order(nas):
+    _write(nas, "2026-04-19", [
+        {"region": "us", "category": "rating", "title": "미국",
+         "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
+                    "headline": "h", "body_md": "-", "url": "https://src.example/x"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-19/us-rating-0")
+    i_url = resp.text.find("원문 링크")
+    i_chart = resp.text.find("embed-widget-advanced-chart.js")
+    i_research = resp.text.find("딥 리서치")
+    assert i_url != -1
+    assert 0 <= i_url < i_chart
+    assert i_chart < i_research
 
 
 def test_detail_page_research_link_when_md_exists(nas):
@@ -138,9 +161,8 @@ def test_detail_page_research_link_when_md_exists(nas):
     with TestClient(app) as c:
         resp = c.get("/2026-04-19/us-rating-0")
     soup = BeautifulSoup(resp.text, "html.parser")
-    link = soup.select_one("a.research-link")
+    link = soup.select_one('a[href="/2026-04-19/us-rating-0/research"]')
     assert link is not None
-    assert link["href"] == "/2026-04-19/us-rating-0/research"
     assert soup.select_one("button#research-btn") is None
 
 
