@@ -274,3 +274,45 @@ p.subtitle { color: var(--fg-muted); font-size: 13px; }
   font-size: 12px; font-weight: 700;
   font-family: "SF Mono", Menlo, monospace;
 }
+
+/* ---------- Search header (input-in-header variant) ---------- */
+.date-header.search-header {
+  padding: 10px 0;
+  gap: 8px;
+}
+.date-header.search-header .back {
+  flex: 0 0 auto;
+  font-size: 18px;
+  padding: 4px 8px;
+  color: var(--link);
+}
+.date-header.search-header #search-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--fg-primary);
+  font-family: inherit;
+}
+
+#search-count { margin: 12px 0 8px; }
+
+/* ---------- Trailing date chip on search result cards ---------- */
+a.card { position: relative; }
+a.card .date-trailing {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font: 10px/1 "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.5px;
+  color: var(--fg-subtle);
+  background: var(--bg-badge);
+  padding: 2px 5px;
+  border-radius: 2px;
+}
+/* Leave room on the right so headline/meta don't collide with the trailing chip */
+a.card .card-body { padding-right: 68px; }

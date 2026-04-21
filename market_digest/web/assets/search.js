@@ -7,6 +7,7 @@
   try {
     cards = await (await fetch("/cards.json")).json();
   } catch (e) {
+    count.hidden = false;
     count.textContent = "검색 데이터를 불러오지 못했습니다.";
     return;
   }
@@ -33,16 +34,18 @@
         ? `<div class="meta meta-${dir}">${metaParts.join(" · ")}</div>`
         : "";
       const blurb = c.company_blurb ? `<div class="blurb">${esc(c.company_blurb)}</div>` : "";
-      const dateChip = `<span class="date-chip">${esc(c.date)}</span>`;
+      const trailingDate = `<span class="date-trailing">${esc(c.date)}</span>`;
       return `<li><a class="card card-${dir}" href="${href}">`
         + `<span class="accent"></span>`
         + `<div class="card-body">`
-        +   `<div class="eyebrow">${dateChip}<span class="region">${region}</span>${house}${tickerRow}</div>`
+        +   `<div class="eyebrow"><span class="region">${region}</span>${house}${tickerRow}</div>`
         +   nameLine
         +   `<div class="headline">${esc(c.headline)}</div>`
         +   meta
         +   blurb
-        + `</div></a></li>`;
+        + `</div>`
+        + trailingDate
+        + `</a></li>`;
     }).join("");
   };
 
@@ -55,6 +58,21 @@
     });
   };
 
-  input.addEventListener("input", () => render(match(input.value)));
+  const onInput = () => {
+    const q = input.value.trim();
+    if (!q) {
+      count.hidden = true;
+      results.hidden = true;
+      results.innerHTML = "";
+      count.textContent = "";
+      return;
+    }
+    const matches = match(q);
+    count.hidden = false;
+    results.hidden = false;
+    render(matches);
+  };
+
+  input.addEventListener("input", onInput);
   input.focus();
 })();

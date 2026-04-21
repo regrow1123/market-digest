@@ -221,15 +221,21 @@ def test_research_page_404_without_md(nas):
     assert resp.status_code == 404
 
 
-def test_search_page_renders(nas):
+def test_search_page_input_in_header(nas):
     app = create_app(nas_dir=nas)
     with TestClient(app) as c:
         resp = c.get("/search")
     assert resp.status_code == 200
-    assert "/cards.json" in resp.text
     soup = BeautifulSoup(resp.text, "html.parser")
-    assert soup.select_one("input#search-input") is not None
-    assert soup.select_one("#search-results") is not None
+    # Header contains the input (single-row layout)
+    header = soup.select_one("header.date-header.search-header")
+    assert header is not None
+    assert header.select_one("input#search-input") is not None
+    # Results and count are hidden by default (before typing)
+    assert soup.select_one("#search-count").has_attr("hidden")
+    assert soup.select_one("#search-results").has_attr("hidden")
+    # No separate "검색" title label row
+    assert "검색" not in [s.get_text(strip=True) for s in soup.select(".date-label")]
 
 
 def test_search_js_renders_card_shape(nas):
@@ -238,7 +244,7 @@ def test_search_js_renders_card_shape(nas):
         resp = c.get("/assets/search.js")
     assert resp.status_code == 200
     assert "card-${dir}" in resp.text
-    assert '"accent"' in resp.text or "accent" in resp.text
+    assert "date-trailing" in resp.text
     assert "region" in resp.text
 
 
