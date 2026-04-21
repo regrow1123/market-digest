@@ -113,7 +113,8 @@ def test_detail_page_renders(nas):
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
                     "headline": "MS upgrade", "body_md": "- detail",
                     "opinion": "Buy", "target": "$200 → $240",
-                    "company_blurb": "스마트폰·서비스"}]},
+                    "company_blurb": "스마트폰·서비스",
+                    "url": "https://src.example/x"}]},
     ])
     app = create_app(nas_dir=nas)
     with TestClient(app) as c:
@@ -121,32 +122,59 @@ def test_detail_page_renders(nas):
     assert resp.status_code == 200
     soup = BeautifulSoup(resp.text, "html.parser")
     assert soup.select_one("article.detail.detail-up") is not None
-    assert soup.select_one("article .accent") is not None
     assert soup.select_one(".eyebrow .region").text == "US"
-    h1 = soup.select_one("article h1")
-    assert "Apple" in h1.text
-    assert "스마트폰" in resp.text
-    assert "RATING" in resp.text and "TARGET" in resp.text
-    assert "🇺🇸" not in resp.text
-    assert "📈" not in resp.text
-    assert soup.select_one("button#research-btn") is not None
+    # source-link lives inside .body (at the end)
+    body = soup.select_one("article .body")
+    assert body is not None
+    assert body.select_one(".source-link a") is not None
+    # TV embed panel present for US ticker
+    assert soup.select_one(".chart-embed") is not None
+    # CTA button at bottom (no md yet)
+    btn = soup.select_one("button#research-btn.cta.cta-primary")
+    assert btn is not None
+    assert "딥 리서치" in btn.text
 
 
-def test_detail_page_actions_order(nas):
+def test_detail_page_contextual_order(nas):
     _write(nas, "2026-04-19", [
         {"region": "us", "category": "rating", "title": "미국",
          "items": [{"id": "us-rating-0", "ticker": "AAPL", "name": "Apple",
-                    "headline": "h", "body_md": "-", "url": "https://src.example/x"}]},
+                    "headline": "h", "body_md": "- detail",
+                    "url": "https://src.example/x"}]},
     ])
     app = create_app(nas_dir=nas)
     with TestClient(app) as c:
         resp = c.get("/2026-04-19/us-rating-0")
-    i_url = resp.text.find("원문 링크")
-    i_chart = resp.text.find("embed-widget-advanced-chart.js")
-    i_research = resp.text.find("딥 리서치")
-    assert i_url != -1
-    assert 0 <= i_url < i_chart
-    assert i_chart < i_research
+    text = resp.text
+    i_chart = text.find("embed-widget-advanced-chart.js")
+    i_body = text.find('class="body"')
+    i_source = text.find("원문 링크")
+    i_cta = text.find("딥 리서치")
+    # chart embed appears before body
+    assert 0 <= i_chart < i_body, (i_chart, i_body)
+    # source link appears inside/after body, and before CTA
+    assert i_body < i_source < i_cta, (i_body, i_source, i_cta)
+
+
+def test_detail_page_kr_has_inline_chart_link_in_meta(nas):
+    _write(nas, "2026-04-20", [
+        {"region": "kr", "category": "company", "title": "국내",
+         "items": [{"id": "kr-company-0", "ticker": "005930", "name": "삼성전자",
+                    "headline": "h", "body_md": "-",
+                    "opinion": "Buy", "target": "85,000 → 95,000"}]},
+    ])
+    app = create_app(nas_dir=nas)
+    with TestClient(app) as c:
+        resp = c.get("/2026-04-20/kr-company-0")
+    soup = BeautifulSoup(resp.text, "html.parser")
+    meta = soup.select_one(".meta-strip")
+    assert meta is not None
+    link = meta.select_one("a.chart-link")
+    assert link is not None
+    assert "차트" in link.text
+    assert "finance.naver.com" in link["href"]
+    # No TV embed for KR
+    assert soup.select_one(".chart-embed") is None
 
 
 def test_detail_page_research_link_when_md_exists(nas):
@@ -396,7 +424,7 @@ def test_detail_page_kr_uses_naver_link(nas):
         resp = c.get("/2026-04-20/kr-company-0")
     assert resp.status_code == 200
     assert "finance.naver.com/item/main.naver?code=005930" in resp.text
-    assert "네이버 금융" in resp.text
+    assert "차트" in resp.text
 
 
 def test_detail_page_no_chart_when_ticker_missing(nas):
