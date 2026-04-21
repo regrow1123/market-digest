@@ -407,13 +407,15 @@ def test_get_research_active_lists_only_pending_running(nas):
     assert j2.job_id not in ids
 
 
-def test_research_js_served(nas):
+def test_research_js_and_base_js_served(nas):
     app = create_app(nas_dir=nas)
     with TestClient(app) as c:
         r = c.get("/assets/research.js")
         b = c.get("/assets/base.js")
     assert r.status_code == 200 and "fetch(\"/api/research\"" in r.text
-    assert b.status_code == 200 and "global-research-badge" in b.text
+    assert b.status_code == 200
+    assert "research-strip" in b.text
+    assert "has-research-strip" in b.text
 
 
 def test_detail_page_kr_uses_naver_link(nas):

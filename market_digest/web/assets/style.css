@@ -289,14 +289,25 @@ article.detail #research-status {
 p.empty { color: var(--fg-muted); text-align: center; margin: 48px 0; }
 p.subtitle { color: var(--fg-muted); font-size: 13px; }
 
-.nav-badge {
-  position: fixed; top: 12px; right: 12px; z-index: 20;
-  background: var(--link); color: #fff;
-  width: 26px; height: 26px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
-  font-family: "SF Mono", Menlo, monospace;
+/* ---------- Research progress strip ---------- */
+.research-strip {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 30;
+  height: 32px;
+  line-height: 32px;
+  background: var(--link);
+  color: #fff;
+  font: 600 12px/32px "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.3px;
+  text-align: center;
+  padding: 0 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+body.has-research-strip { padding-top: 32px; }
+body.has-research-strip .date-header { top: 32px; }
 
 /* ---------- Search header (input-in-header variant) ---------- */
 .date-header.search-header {
